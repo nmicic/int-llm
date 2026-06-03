@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>√2 from Dyadic Refinement - Metric Completion</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600&display=swap');
+    
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    body {
+      min-height: 100vh;
+      background: linear-gradient(145deg, #050508 0%, #0a0a14 40%, #10101a 70%, #080810 100%);
+      color: #e0e0e0;
+      font-family: 'JetBrains Mono', monospace;
+      padding: 12px;
+    }
+    
+    .header {
+      text-align: center;
+      margin-bottom: 10px;
+    }
+    
+    .header h1 {
+      font-size: 1.3rem;
+      font-weight: 300;
+      letter-spacing: 0.2em;
+      background: linear-gradient(90deg, #a855f7, #4ecdc4, #ffe66d, #ff6b6b);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    
+    .header p {
+      font-size: 0.5rem;
+      letter-spacing: 0.12em;
+      color: #555;
+      margin-top: 4px;
+    }
+    
+    .sqrt-display {
+      text-align: center;
+      padding: 15px;
+      background: rgba(0,0,0,0.4);
+      border-radius: 8px;
+      margin-bottom: 12px;
+      border: 1px solid rgba(168,85,247,0.3);
+    }
+    
+    .sqrt-label {
+      font-size: 0.5rem;
+      color: #666;
+      letter-spacing: 0.15em;
+      margin-bottom: 4px;
+    }
+    
+    .sqrt-value {
+      font-size: 2rem;
+      font-weight: 300;
+      color: #a855f7;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    
+    .sqrt-value .converging { color: #a855f7; }
+    .sqrt-value .uncertain { color: #555; }
+    
+    .sqrt-comparison {
+      font-size: 0.55rem;
+      color: #666;
+      margin-top: 6px;
+    }
+    
+    .controls {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+    
+    .control-group {
+      display: flex;
+      gap: 3px;
+      padding: 4px;
+      background: rgba(255,255,255,0.02);
+      border-radius: 4px;
+      align-items: center;
+    }
+    
+    .control-label {
+      font-size: 0.45rem;
+      color: #555;
+      padding: 0 6px;
+    }
+    
+    .btn {
+      padding: 5px 10px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 3px;
+      color: #666;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 0.6rem;
+      transition: all 0.15s ease;
+    }
+    
+    .btn:hover { background: rgba(255,255,255,0.08); color: #888; }
+    .btn.active { background: rgba(168,85,247,0.2); border-color: rgba(168,85,247,0.5); color: #a855f7; }
+    
+    .main-container {
+      display: grid;
+      grid-template-columns: 1fr 320px;
+      gap: 12px;
+      max-width: 1300px;
+      margin: 0 auto;
+    }
+    
+    @media (max-width: 950px) {
+      .main-container { grid-template-columns: 1fr; }
+    }
+    
+    .canvas-container {
+      background: rgba(0,0,0,0.5);
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.04);
+      aspect-ratio: 1;
+      max-height: 60vh;
+    }
+    
+    #main-canvas {
+      width: 100%;
+      height: 100%;
+      border-radius: 8px;
+    }
+    
+    .info-panel {
+      background: rgba(0,0,0,0.35);
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.04);
+      padding: 12px;
+      font-size: 0.6rem;
+      overflow-y: auto;
+      max-height: 60vh;
+    }
+    
+    .info-section {
+      margin-bottom: 10px;
+      padding: 10px;
+      background: rgba(255,255,255,0.02);
+      border-radius: 5px;
+      border: 1px solid rgba(255,255,255,0.04);
+    }
+    
+    .info-section.purple { background: rgba(168,85,247,0.08); border-color: rgba(168,85,247,0.2); }
+    .info-section.green { background: rgba(78,205,196,0.08); border-color: rgba(78,205,196,0.2); }
+    .info-section.yellow { background: rgba(255,230,109,0.08); border-color: rgba(255,230,109,0.2); }
+    
+    .section-title {
+      font-size: 0.45rem;
+      letter-spacing: 0.12em;
+      color: #666;
+      margin-bottom: 6px;
+    }
+    
+    .section-title.purple { color: #a855f7; }
+    .section-title.green { color: #4ecdc4; }
+    .section-title.yellow { color: #ffe66d; }
+    
+    .formula-box {
+      padding: 8px;
+      background: rgba(0,0,0,0.3);
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 0.52rem;
+      color: #888;
+      line-height: 1.6;
+    }
+    
+    .formula-box .hl { color: #a855f7; }
+    .formula-box .hl2 { color: #4ecdc4; }
+    .formula-box .cm { color: #555; }
+    
+    .stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+    }
+    
+    .stat-item {
+      padding: 6px;
+      background: rgba(0,0,0,0.2);
+      border-radius: 4px;
+      text-align: center;
+    }
+    
+    .stat-item .label {
+      font-size: 0.4rem;
+      color: #555;
+      letter-spacing: 0.1em;
+    }
+    
+    .stat-item .value {
+      font-size: 0.75rem;
+      color: #a855f7;
+      margin-top: 2px;
+    }
+    
+    .bounds-display {
+      padding: 8px;
+      background: rgba(0,0,0,0.3);
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 0.5rem;
+      text-align: center;
+    }
+    
+    .bound-lower { color: #4ecdc4; }
+    .bound-upper { color: #ff6b6b; }
+    .bound-sqrt { color: #a855f7; font-weight: 600; }
+    
+    .convergence-table {
+      width: 100%;
+      font-size: 0.48rem;
+      border-collapse: collapse;
+    }
+    
+    .convergence-table th {
+      text-align: left;
+      color: #555;
+      padding: 3px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    
+    .convergence-table td {
+      padding: 3px;
+      border-bottom: 1px solid rgba(255,255,255,0.03);
+    }
+    
+    .convergence-table .p { color: #ffe66d; }
+    .convergence-table .val { color: #a855f7; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>√2 FROM DYADIC REFINEMENT</h1>
+    <p>METRIC COMPLETION • A_p = max{a : a² ≤ 2·2^(2p)} • DIAGONAL OF UNIT SQUARE</p>
+  </div>
+  
+  <div class="sqrt-display">
+    <div class="sqrt-label">√2 AT PRECISION p = <span id="current-p">16</span> BITS</div>
+    <div class="sqrt-value" id="sqrt-estimate">1.41421356...</div>
+    <div class="sqrt-comparison">
+      actual √2 = <span>1.41421356237309504880168872420969...</span>
+    </div>
+  </div>
+  
+  <div class="controls">
+    <div class="control-group">
+      <span class="control-label">PRECISION p</span>
+      <button class="btn" data-p="4">4</button>
+      <button class="btn" data-p="8">8</button>
+      <button class="btn" data-p="12">12</button>
+      <button class="btn active" data-p="16">16</button>
+      <button class="btn" data-p="20">20</button>
+      <button class="btn" data-p="24">24</button>
+      <button class="btn" data-p="28">28</button>
+    </div>
+    
+    <div class="control-group">
+      <span class="control-label">VIEW</span>
+      <button class="btn active" data-view="geometry">Geometry</button>
+      <button class="btn" data-view="newton">Newton</button>
+      <button class="btn" data-view="bounds">Bounds</button>
+    </div>
+    
+    <div class="control-group">
+      <button class="btn" id="btn-animate">▶ Animate</button>
+    </div>
+  </div>
+  
+  <div class="main-container">
+    <div class="canvas-container">
+      <canvas id="main-canvas"></canvas>
+    </div>
+    
+    <div class="info-panel">
+      <div class="info-section purple">
+        <div class="section-title purple">THE DEFINITION</div>
+        <div class="formula-box">
+          <span class="hl">√M := lim(p→∞) A_p / 2^p</span><br><br>
+          <span class="cm">where:</span><br>
+          <span class="hl2">A_p = max{ a ∈ Z≥0 : a² ≤ M·2^(2p) }</span><br>
+          <span class="hl2">    = floor(√M · 2^p)</span><br><br>
+          <span class="cm">For √2: M = 2</span>
+        </div>
+      </div>
+      
+      <div class="info-section green">
+        <div class="section-title green">CERTIFIED BOUNDS</div>
+        <div class="bounds-display">
+          <span class="bound-lower" id="bound-lower">---</span>
+          <span style="color:#666"> ≤ </span>
+          <span class="bound-sqrt">√2</span>
+          <span style="color:#666"> < </span>
+          <span class="bound-upper" id="bound-upper">---</span>
+        </div>
+        <div style="font-size:0.45rem;color:#888;text-align:center;margin-top:6px;">
+          Bracket width: <span id="bracket-width" style="color:#ffe66d">2^(-p)</span>
+        </div>
+      </div>
+      
+      <div class="info-section yellow">
+        <div class="section-title yellow">CURRENT COMPUTATION</div>
+        <div class="stats-grid">
+          <div class="stat-item">
+            <div class="label">A_p (INTEGER)</div>
+            <div class="value" id="stat-ap">92681</div>
+          </div>
+          <div class="stat-item">
+            <div class="label">A_p²</div>
+            <div class="value" id="stat-ap2">---</div>
+          </div>
+          <div class="stat-item">
+            <div class="label">2·2^(2p)</div>
+            <div class="value" id="stat-m2p">---</div>
+          </div>
+          <div class="stat-item">
+            <div class="label">GAP</div>
+            <div class="value" id="stat-gap">---</div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="info-section">
+        <div class="section-title">CONVERGENCE (BIT-BY-BIT)</div>
+        <div style="max-height:120px;overflow-y:auto;">
+          <table class="convergence-table">
+            <thead><tr><th>p</th><th>A_p</th><th>√2 ≈ A_p/2^p</th></tr></thead>
+            <tbody id="convergence-body"></tbody>
+          </table>
+        </div>
+      </div>
+      
+      <div class="info-section">
+        <div class="section-title">GEOMETRIC MEANING</div>
+        <div style="font-size:0.5rem;color:#888;line-height:1.6;">
+          <strong style="color:#a855f7">Metric Completion:</strong><br>
+          • Squared distance d² is always integer<br>
+          • d² = Δx² + Δy² + Δz² + ...<br>
+          • Length = √(d²) needs sqrt!<br><br>
+          <strong style="color:#4ecdc4">√2 specifically:</strong><br>
+          • Diagonal of unit square<br>
+          • √2 = √(1² + 1²)<br>
+          • Bridges discrete → continuous
+        </div>
+      </div>
+      
+      <div class="info-section">
+        <div class="section-title">NEWTON'S METHOD (INTEGER)</div>
+        <div class="formula-box">
+          <span class="cm">// All operations are integer!</span><br>
+          <span class="hl">X_{n+1} = (X_n + M·2^(2p)/X_n) >> 1</span><br><br>
+          <span class="cm">Converges in O(log p) iterations</span><br>
+          <span class="cm">Each iteration doubles correct bits</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ============================================
+    // STATE
+    // ============================================
+    const state = {
+      p: 16,
+      view: 'geometry',
+      isAnimating: false,
+      animationP: 1
+    };
+    
+    const canvas = document.getElementById('main-canvas');
+    const ctx = canvas.getContext('2d');
+    
+    const SQRT2 = Math.SQRT2;
+    const SQRT2_STRING = '1.41421356237309504880168872420969';
+    
+    // ============================================
+    // COMPUTATION (Simulated Integer Arithmetic)
+    // ============================================
+    
+    // In JS we simulate the integer computation
+    // Real implementation would use BigInt for high precision
+    
+    function computeAp(M, p) {
+      // A_p = floor(√M · 2^p)
+      // We compute this via bit-by-bit method
+      
+      if (p > 26) {
+        // Use BigInt for higher precision
+        return computeApBigInt(BigInt(M), p);
+      }
+      
+      const M_scaled = M * Math.pow(4, p);  // M · 2^(2p)
+      
+      let result = 0;
+      let bit = 1 << (p + 1);
+      
+      while (bit > 0 && bit * bit > M_scaled) {
+        bit >>= 1;
+      }
+      
+      while (bit > 0) {
+        const candidate = result + bit;
+        if (candidate * candidate <= M_scaled) {
+          result = candidate;
+        }
+        bit >>= 1;
+      }
+      
+      return result;
+    }
+    
+    function computeApBigInt(M, p) {
+      const M_scaled = M << BigInt(2 * p);
+      
+      let result = 0n;
+      let bit = 1n << BigInt(p + 1);
+      
+      while (bit > 0n && bit * bit > M_scaled) {
+        bit >>= 1n;
+      }
+      
+      while (bit > 0n) {
+        const candidate = result + bit;
+        if (candidate * candidate <= M_scaled) {
+          result = candidate;
+        }
+        bit >>= 1n;
+      }
+      
+      return result;
+    }
+    
+    function computeSqrt2(p) {
+      const Ap = computeAp(2, p);
+      return typeof Ap === 'bigint' 
+        ? Number(Ap) / Math.pow(2, p)
+        : Ap / Math.pow(2, p);
+    }
+    
+    function newtonIteration(x, M_scaled) {
+      return Math.floor((x + Math.floor(M_scaled / x)) / 2);
+    }
+    
+    function computeNewtonSteps(M, p) {
+      const M_scaled = M * Math.pow(4, p);
+      let x = Math.floor(1.5 * Math.pow(2, p));
+      
+      const steps = [x];
+      
+      for (let i = 0; i < 20; i++) {
+        const x_new = newtonIteration(x, M_scaled);
+        steps.push(x_new);
+        if (Math.abs(x_new - x) <= 1) break;
+        x = x_new;
+      }
+      
+      return steps;
+    }
+    
+    // ============================================
+    // RENDERING
+    // ============================================
+    
+    function render() {
+      const rect = canvas.parentElement.getBoundingClientRect();
+      canvas.width = rect.width * window.devicePixelRatio;
+      canvas.height = rect.height * window.devicePixelRatio;
+      canvas.style.width = rect.width + 'px';
+      canvas.style.height = rect.height + 'px';
+      ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+      
+      const width = rect.width;
+      const height = rect.height;
+      
+      ctx.fillStyle = '#0a0a14';
+      ctx.fillRect(0, 0, width, height);
+      
+      if (state.view === 'geometry') {
+        renderGeometry(width, height);
+      } else if (state.view === 'newton') {
+        renderNewton(width, height);
+      } else if (state.view === 'bounds') {
+        renderBounds(width, height);
+      }
+      
+      updateInfo();
+    }
+    
+    function renderGeometry(width, height) {
+      const margin = { top: 40, right: 40, bottom: 50, left: 50 };
+      const size = Math.min(width - margin.left - margin.right, height - margin.top - margin.bottom);
+      const offsetX = margin.left + (width - margin.left - margin.right - size) / 2;
+      const offsetY = margin.top;
+      
+      // Draw unit square
+      ctx.strokeStyle = 'rgba(168, 85, 247, 0.3)';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(offsetX, offsetY, size, size);
+      
+      // Fill unit square
+      ctx.fillStyle = 'rgba(168, 85, 247, 0.1)';
+      ctx.fillRect(offsetX, offsetY, size, size);
+      
+      // Draw diagonal
+      ctx.strokeStyle = '#4ecdc4';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(offsetX, offsetY + size);
+      ctx.lineTo(offsetX + size, offsetY);
+      ctx.stroke();
+      
+      // Draw grid based on precision
+      const gridLines = Math.min(Math.pow(2, Math.min(state.p, 5)), 32);
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+      ctx.lineWidth = 0.5;
+      
+      for (let i = 1; i < gridLines; i++) {
+        const pos = (i / gridLines) * size;
+        ctx.beginPath();
+        ctx.moveTo(offsetX + pos, offsetY);
+        ctx.lineTo(offsetX + pos, offsetY + size);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(offsetX, offsetY + pos);
+        ctx.lineTo(offsetX + size, offsetY + pos);
+        ctx.stroke();
+      }
+      
+      // Draw corner points
+      ctx.fillStyle = '#a855f7';
+      ctx.beginPath();
+      ctx.arc(offsetX, offsetY + size, 6, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(offsetX + size, offsetY, 6, 0, Math.PI * 2);
+      ctx.fill();
+      
+      // Labels
+      ctx.fillStyle = '#888';
+      ctx.font = '12px JetBrains Mono';
+      ctx.textAlign = 'center';
+      
+      // Side length = 1
+      ctx.fillText('1', offsetX + size / 2, offsetY + size + 20);
+      ctx.fillText('1', offsetX - 20, offsetY + size / 2 + 4);
+      
+      // Diagonal = √2
+      ctx.fillStyle = '#4ecdc4';
+      ctx.save();
+      ctx.translate(offsetX + size / 2 + 15, offsetY + size / 2 - 15);
+      ctx.rotate(-Math.PI / 4);
+      ctx.fillText(`√2 ≈ ${computeSqrt2(state.p).toFixed(8)}`, 0, 0);
+      ctx.restore();
+      
+      // d² formula
+      ctx.fillStyle = '#ffe66d';
+      ctx.font = '11px JetBrains Mono';
+      ctx.textAlign = 'left';
+      ctx.fillText('d² = 1² + 1² = 2 (integer!)', offsetX, offsetY - 15);
+      ctx.fillText('d = √2 (refinement invariant)', offsetX, offsetY - 3);
+    }
+    
+    function renderNewton(width, height) {
+      const margin = { top: 40, right: 40, bottom: 50, left: 70 };
+      const plotWidth = width - margin.left - margin.right;
+      const plotHeight = height - margin.top - margin.bottom;
+      
+      const steps = computeNewtonSteps(2, state.p);
+      const sqrt2_fp = Math.floor(SQRT2 * Math.pow(2, state.p));
+      
+      // Draw axes
+      ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(margin.left, margin.top);
+      ctx.lineTo(margin.left, margin.top + plotHeight);
+      ctx.lineTo(margin.left + plotWidth, margin.top + plotHeight);
+      ctx.stroke();
+      
+      // Y scale: from min to max of steps
+      const yMin = Math.min(...steps) * 0.95;
+      const yMax = Math.max(...steps) * 1.05;
+      const yScale = plotHeight / (yMax - yMin);
+      const xScale = plotWidth / (steps.length - 1);
+      
+      // Draw true √2 line
+      ctx.strokeStyle = 'rgba(168, 85, 247, 0.5)';
+      ctx.setLineDash([5, 5]);
+      ctx.beginPath();
+      const trueY = margin.top + plotHeight - (sqrt2_fp - yMin) * yScale;
+      ctx.moveTo(margin.left, trueY);
+      ctx.lineTo(margin.left + plotWidth, trueY);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      
+      // Draw Newton steps
+      ctx.strokeStyle = '#4ecdc4';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      
+      for (let i = 0; i < steps.length; i++) {
+        const x = margin.left + i * xScale;
+        const y = margin.top + plotHeight - (steps[i] - yMin) * yScale;
+        
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+      
+      // Draw points
+      ctx.fillStyle = '#4ecdc4';
+      for (let i = 0; i < steps.length; i++) {
+        const x = margin.left + i * xScale;
+        const y = margin.top + plotHeight - (steps[i] - yMin) * yScale;
+        ctx.beginPath();
+        ctx.arc(x, y, 5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      
+      // Labels
+      ctx.fillStyle = '#888';
+      ctx.font = '10px JetBrains Mono';
+      ctx.textAlign = 'center';
+      
+      for (let i = 0; i < steps.length; i++) {
+        ctx.fillText(i.toString(), margin.left + i * xScale, margin.top + plotHeight + 15);
+      }
+      ctx.fillText('Iteration', margin.left + plotWidth / 2, margin.top + plotHeight + 35);
+      
+      ctx.textAlign = 'right';
+      ctx.fillStyle = '#a855f7';
+      ctx.fillText('√2·2^p', margin.left - 5, trueY + 4);
+      
+      // Title
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#4ecdc4';
+      ctx.font = '12px JetBrains Mono';
+      ctx.fillText(`Newton: X_{n+1} = (X_n + 2·2^(2p)/X_n) >> 1`, width / 2, margin.top - 15);
+      ctx.fillText(`Converged in ${steps.length - 1} iterations`, width / 2, margin.top);
+    }
+    
+    function renderBounds(width, height) {
+      const margin = { top: 60, right: 40, bottom: 50, left: 50 };
+      const plotWidth = width - margin.left - margin.right;
+      const plotHeight = height - margin.top - margin.bottom;
+      
+      // Draw bounds bars for each precision
+      const maxP = Math.min(state.p, 20);
+      const barHeight = plotHeight / maxP * 0.7;
+      
+      // Scale: centered around √2
+      const center = SQRT2;
+      const maxWidth = 0.5;  // ±0.25 from center
+      const xScale = plotWidth / maxWidth;
+      const centerX = margin.left + plotWidth / 2;
+      
+      // Draw center line (√2)
+      ctx.strokeStyle = '#a855f7';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(centerX, margin.top);
+      ctx.lineTo(centerX, margin.top + plotHeight);
+      ctx.stroke();
+      
+      // Draw bounds for each p
+      for (let p = 1; p <= maxP; p++) {
+        const y = margin.top + (p - 1) * (plotHeight / maxP) + (plotHeight / maxP - barHeight) / 2;
+        const Ap = computeAp(2, p);
+        const lower = (typeof Ap === 'bigint' ? Number(Ap) : Ap) / Math.pow(2, p);
+        const upper = lower + Math.pow(2, -p);
+        
+        const lowerX = centerX + (lower - center) * xScale * 100;
+        const upperX = centerX + (upper - center) * xScale * 100;
+        
+        // Draw bound rectangle
+        ctx.fillStyle = p === state.p ? 'rgba(78, 205, 196, 0.4)' : 'rgba(168, 85, 247, 0.2)';
+        ctx.fillRect(lowerX, y, upperX - lowerX, barHeight);
+        
+        ctx.strokeStyle = p === state.p ? '#4ecdc4' : 'rgba(168, 85, 247, 0.5)';
+        ctx.lineWidth = p === state.p ? 2 : 1;
+        ctx.strokeRect(lowerX, y, upperX - lowerX, barHeight);
+        
+        // Label
+        ctx.fillStyle = p === state.p ? '#4ecdc4' : '#666';
+        ctx.font = '10px JetBrains Mono';
+        ctx.textAlign = 'right';
+        ctx.fillText(`p=${p}`, margin.left - 5, y + barHeight / 2 + 4);
+      }
+      
+      // Labels
+      ctx.fillStyle = '#888';
+      ctx.font = '10px JetBrains Mono';
+      ctx.textAlign = 'center';
+      ctx.fillText('√2', centerX, margin.top - 25);
+      ctx.fillText('← lower bound', margin.left + plotWidth * 0.25, margin.top - 10);
+      ctx.fillText('upper bound →', margin.left + plotWidth * 0.75, margin.top - 10);
+      
+      ctx.fillStyle = '#a855f7';
+      ctx.fillText('Bounds converge to √2 as p → ∞', width / 2, margin.top + plotHeight + 25);
+    }
+    
+    function updateInfo() {
+      const p = state.p;
+      const Ap = computeAp(2, p);
+      const ApNum = typeof Ap === 'bigint' ? Number(Ap) : Ap;
+      const sqrt2_est = ApNum / Math.pow(2, p);
+      
+      document.getElementById('current-p').textContent = p;
+      
+      // Update sqrt display
+      const estStr = sqrt2_est.toFixed(15);
+      const trueStr = SQRT2.toFixed(15);
+      let match = 0;
+      for (let i = 0; i < Math.min(estStr.length, trueStr.length); i++) {
+        if (estStr[i] === trueStr[i]) match++;
+        else break;
+      }
+      
+      document.getElementById('sqrt-estimate').innerHTML = 
+        `<span class="converging">${estStr.substring(0, match)}</span><span class="uncertain">${estStr.substring(match)}</span>`;
+      
+      // Update bounds
+      const lower = sqrt2_est;
+      const upper = sqrt2_est + Math.pow(2, -p);
+      document.getElementById('bound-lower').textContent = lower.toFixed(10);
+      document.getElementById('bound-upper').textContent = upper.toFixed(10);
+      document.getElementById('bracket-width').textContent = `2^(-${p}) = ${Math.pow(2, -p).toExponential(2)}`;
+      
+      // Update stats
+      document.getElementById('stat-ap').textContent = ApNum.toLocaleString();
+      
+      if (p <= 20) {
+        const Ap2 = ApNum * ApNum;
+        const M2p = 2 * Math.pow(4, p);
+        document.getElementById('stat-ap2').textContent = Ap2.toLocaleString();
+        document.getElementById('stat-m2p').textContent = M2p.toLocaleString();
+        document.getElementById('stat-gap').textContent = (M2p - Ap2).toLocaleString();
+      } else {
+        document.getElementById('stat-ap2').textContent = '(large)';
+        document.getElementById('stat-m2p').textContent = '(large)';
+        document.getElementById('stat-gap').textContent = '(large)';
+      }
+      
+      // Update convergence table
+      const tbody = document.getElementById('convergence-body');
+      tbody.innerHTML = '';
+      for (let i = 4; i <= Math.min(p, 28); i += 4) {
+        const Ai = computeAp(2, i);
+        const AiNum = typeof Ai === 'bigint' ? Number(Ai) : Ai;
+        const est = AiNum / Math.pow(2, i);
+        tbody.innerHTML += `<tr>
+          <td class="p">${i}</td>
+          <td>${AiNum.toLocaleString()}</td>
+          <td class="val">${est.toFixed(12)}</td>
+        </tr>`;
+      }
+    }
+    
+    // ============================================
+    // CONTROLS
+    // ============================================
+    
+    document.querySelectorAll('[data-p]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        state.p = parseInt(btn.dataset.p);
+        document.querySelectorAll('[data-p]').forEach(b => 
+          b.classList.toggle('active', parseInt(b.dataset.p) === state.p)
+        );
+        render();
+      });
+    });
+    
+    document.querySelectorAll('[data-view]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        state.view = btn.dataset.view;
+        document.querySelectorAll('[data-view]').forEach(b => 
+          b.classList.toggle('active', b.dataset.view === state.view)
+        );
+        render();
+      });
+    });
+    
+    document.getElementById('btn-animate').addEventListener('click', function() {
+      if (state.isAnimating) {
+        state.isAnimating = false;
+        this.textContent = '▶ Animate';
+        this.classList.remove('active');
+      } else {
+        state.isAnimating = true;
+        state.animationP = 4;
+        this.textContent = '⏹ Stop';
+        this.classList.add('active');
+        animateRefinement();
+      }
+    });
+    
+    function animateRefinement() {
+      if (!state.isAnimating) return;
+      
+      state.p = state.animationP;
+      document.querySelectorAll('[data-p]').forEach(b => 
+        b.classList.toggle('active', parseInt(b.dataset.p) === state.p)
+      );
+      
+      render();
+      
+      state.animationP += 4;
+      if (state.animationP > 28) state.animationP = 4;
+      
+      setTimeout(animateRefinement, 800);
+    }
+    
+    // ============================================
+    // INIT
+    // ============================================
+    
+    window.addEventListener('resize', render);
+    render();
+  </script>
+</body>
+</html>

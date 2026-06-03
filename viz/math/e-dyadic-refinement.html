@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>e from Dyadic Refinement - Growth Invariant</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600&display=swap');
+    
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    body {
+      min-height: 100vh;
+      background: linear-gradient(145deg, #050508 0%, #0a0a14 40%, #10101a 70%, #080810 100%);
+      color: #e0e0e0;
+      font-family: 'JetBrains Mono', monospace;
+      padding: 12px;
+    }
+    
+    .header {
+      text-align: center;
+      margin-bottom: 12px;
+    }
+    
+    .header h1 {
+      font-size: 1.3rem;
+      font-weight: 300;
+      letter-spacing: 0.2em;
+      background: linear-gradient(90deg, #4ecdc4, #ffe66d, #a855f7, #ff6b6b);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    
+    .header p {
+      font-size: 0.5rem;
+      letter-spacing: 0.12em;
+      color: #555;
+      margin-top: 4px;
+    }
+    
+    .e-display {
+      text-align: center;
+      padding: 15px;
+      background: rgba(0,0,0,0.4);
+      border-radius: 8px;
+      margin-bottom: 12px;
+      border: 1px solid rgba(78,205,196,0.2);
+    }
+    
+    .e-label {
+      font-size: 0.5rem;
+      color: #666;
+      letter-spacing: 0.15em;
+      margin-bottom: 4px;
+    }
+    
+    .e-value {
+      font-size: 2rem;
+      font-weight: 300;
+      color: #4ecdc4;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    
+    .e-value .converging { color: #4ecdc4; }
+    .e-value .uncertain { color: #666; opacity: 0.5; }
+    
+    .e-comparison {
+      font-size: 0.55rem;
+      color: #666;
+      margin-top: 6px;
+    }
+    
+    .controls {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+    
+    .control-group {
+      display: flex;
+      gap: 3px;
+      padding: 4px;
+      background: rgba(255,255,255,0.02);
+      border-radius: 4px;
+      align-items: center;
+    }
+    
+    .control-label {
+      font-size: 0.45rem;
+      color: #555;
+      padding: 0 6px;
+    }
+    
+    .btn {
+      padding: 5px 10px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 3px;
+      color: #666;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 0.6rem;
+      transition: all 0.15s ease;
+    }
+    
+    .btn:hover { background: rgba(255,255,255,0.08); color: #888; }
+    .btn.active { background: rgba(78,205,196,0.2); border-color: rgba(78,205,196,0.5); color: #4ecdc4; }
+    
+    .main-container {
+      display: grid;
+      grid-template-columns: 1fr 320px;
+      gap: 12px;
+      max-width: 1300px;
+      margin: 0 auto;
+    }
+    
+    @media (max-width: 950px) {
+      .main-container { grid-template-columns: 1fr; }
+    }
+    
+    .canvas-container {
+      background: rgba(0,0,0,0.5);
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.04);
+      aspect-ratio: 4/3;
+      max-height: 55vh;
+    }
+    
+    #main-canvas {
+      width: 100%;
+      height: 100%;
+      border-radius: 8px;
+    }
+    
+    .info-panel {
+      background: rgba(0,0,0,0.35);
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.04);
+      padding: 12px;
+      font-size: 0.6rem;
+      overflow-y: auto;
+      max-height: 55vh;
+    }
+    
+    .info-section {
+      margin-bottom: 10px;
+      padding: 10px;
+      background: rgba(255,255,255,0.02);
+      border-radius: 5px;
+      border: 1px solid rgba(255,255,255,0.04);
+    }
+    
+    .info-section.green { background: rgba(78,205,196,0.08); border-color: rgba(78,205,196,0.2); }
+    .info-section.yellow { background: rgba(255,230,109,0.08); border-color: rgba(255,230,109,0.2); }
+    .info-section.purple { background: rgba(168,85,247,0.08); border-color: rgba(168,85,247,0.2); }
+    
+    .section-title {
+      font-size: 0.45rem;
+      letter-spacing: 0.12em;
+      color: #666;
+      margin-bottom: 6px;
+    }
+    
+    .section-title.green { color: #4ecdc4; }
+    .section-title.yellow { color: #ffe66d; }
+    .section-title.purple { color: #a855f7; }
+    
+    .formula-box {
+      padding: 8px;
+      background: rgba(0,0,0,0.3);
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 0.52rem;
+      color: #888;
+      line-height: 1.6;
+    }
+    
+    .formula-box .hl { color: #4ecdc4; }
+    .formula-box .hl2 { color: #ffe66d; }
+    .formula-box .cm { color: #555; }
+    
+    .stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+    }
+    
+    .stat-item {
+      padding: 6px;
+      background: rgba(0,0,0,0.2);
+      border-radius: 4px;
+      text-align: center;
+    }
+    
+    .stat-item .label {
+      font-size: 0.4rem;
+      color: #555;
+      letter-spacing: 0.1em;
+    }
+    
+    .stat-item .value {
+      font-size: 0.75rem;
+      color: #4ecdc4;
+      margin-top: 2px;
+    }
+    
+    .convergence-table {
+      width: 100%;
+      font-size: 0.5rem;
+      border-collapse: collapse;
+    }
+    
+    .convergence-table th {
+      text-align: left;
+      color: #555;
+      padding: 3px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    
+    .convergence-table td {
+      padding: 3px;
+      border-bottom: 1px solid rgba(255,255,255,0.03);
+    }
+    
+    .convergence-table .k { color: #a855f7; }
+    .convergence-table .val { color: #4ecdc4; }
+    .convergence-table .err { color: #ffe66d; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>e FROM DYADIC REFINEMENT</h1>
+    <p>GROWTH INVARIANT • (1 + 2⁻ᵏ)^(2ᵏ) → e • INTEGER ARITHMETIC ONLY</p>
+  </div>
+  
+  <div class="e-display">
+    <div class="e-label">ESTIMATED e AT RESOLUTION k = <span id="current-k">10</span></div>
+    <div class="e-value" id="e-estimate">2.71828...</div>
+    <div class="e-comparison">
+      actual e = <span>2.718281828459045235360287471352...</span>
+    </div>
+  </div>
+  
+  <div class="controls">
+    <div class="control-group">
+      <span class="control-label">RESOLUTION k</span>
+      <button class="btn" data-k="1">1</button>
+      <button class="btn" data-k="2">2</button>
+      <button class="btn" data-k="4">4</button>
+      <button class="btn" data-k="8">8</button>
+      <button class="btn active" data-k="10">10</button>
+      <button class="btn" data-k="15">15</button>
+      <button class="btn" data-k="20">20</button>
+      <button class="btn" data-k="25">25</button>
+    </div>
+    
+    <div class="control-group">
+      <span class="control-label">VIEW</span>
+      <button class="btn active" data-view="growth">Growth Curve</button>
+      <button class="btn" data-view="steps">Step Function</button>
+      <button class="btn" data-view="error">Error Decay</button>
+    </div>
+    
+    <div class="control-group">
+      <button class="btn" id="btn-animate">▶ Animate</button>
+    </div>
+  </div>
+  
+  <div class="main-container">
+    <div class="canvas-container">
+      <canvas id="main-canvas"></canvas>
+    </div>
+    
+    <div class="info-panel">
+      <div class="info-section green">
+        <div class="section-title green">THE DEFINITION</div>
+        <div class="formula-box">
+          <span class="hl">e := lim(k→∞) (1 + 2⁻ᵏ)^(2ᵏ)</span><br><br>
+          <span class="cm">Compound interest interpretation:</span><br>
+          • Rate per period: <span class="hl2">r = 2⁻ᵏ</span><br>
+          • Number of periods: <span class="hl2">n = 2ᵏ</span><br>
+          • Final amount: <span class="hl">(1 + r)ⁿ → e</span>
+        </div>
+      </div>
+      
+      <div class="info-section yellow">
+        <div class="section-title yellow">CURRENT COMPUTATION</div>
+        <div class="stats-grid">
+          <div class="stat-item">
+            <div class="label">STEPS (2ᵏ)</div>
+            <div class="value" id="stat-steps">1024</div>
+          </div>
+          <div class="stat-item">
+            <div class="label">STEP SIZE (2⁻ᵏ)</div>
+            <div class="value" id="stat-size">0.000977</div>
+          </div>
+          <div class="stat-item">
+            <div class="label">MULTIPLICATIONS</div>
+            <div class="value" id="stat-mults">10</div>
+          </div>
+          <div class="stat-item">
+            <div class="label">ERROR</div>
+            <div class="value" id="stat-error">~10⁻³</div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="info-section purple">
+        <div class="section-title purple">CONVERGENCE TABLE</div>
+        <div style="max-height:150px;overflow-y:auto;">
+          <table class="convergence-table">
+            <thead><tr><th>k</th><th>Estimate</th><th>Error</th></tr></thead>
+            <tbody id="convergence-body"></tbody>
+          </table>
+        </div>
+      </div>
+      
+      <div class="info-section">
+        <div class="section-title">WHY DYADIC IS PERFECT</div>
+        <div style="font-size:0.5rem;color:#888;line-height:1.6;">
+          • Step size Δ = 2⁻ᵏ (exact in binary)<br>
+          • Number of steps = 2ᵏ (power of 2)<br>
+          • Repeated squaring: only k multiplies!<br>
+          • (1 + Δ)^n via: square k times<br>
+          • Each k adds ~1 bit of precision
+        </div>
+      </div>
+      
+      <div class="info-section">
+        <div class="section-title">DIFFERENTIAL EQUATION VIEW</div>
+        <div class="formula-box">
+          <span class="cm">e solves: dy/dt = y, y(0) = 1</span><br><br>
+          <span class="cm">Euler's method with step Δ = 2⁻ᵏ:</span><br>
+          <span class="hl2">y(t+Δ) = y(t) · (1 + Δ)</span><br><br>
+          <span class="cm">After 2ᵏ steps (t = 1):</span><br>
+          <span class="hl">y(1) = (1 + 2⁻ᵏ)^(2ᵏ) → e</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ============================================
+    // STATE
+    // ============================================
+    const state = {
+      k: 10,
+      view: 'growth', // growth, steps, error
+      isAnimating: false,
+      animationK: 1
+    };
+    
+    const canvas = document.getElementById('main-canvas');
+    const ctx = canvas.getContext('2d');
+    
+    const E = Math.E;
+    const E_STRING = '2.718281828459045235360287471352';
+    
+    // ============================================
+    // COMPUTATION
+    // ============================================
+    
+    function computeE(k) {
+      // e_k = (1 + 2^(-k))^(2^k)
+      // Computed via repeated squaring: k multiplications
+      
+      const epsilon = Math.pow(2, -k);
+      let result = 1 + epsilon;
+      
+      // Square k times: (1+ε)^2, (1+ε)^4, ..., (1+ε)^(2^k)
+      for (let i = 0; i < k; i++) {
+        result = result * result;
+      }
+      
+      return result;
+    }
+    
+    function computeEWithSteps(k) {
+      // Return array of intermediate values for visualization
+      const epsilon = Math.pow(2, -k);
+      let result = 1 + epsilon;
+      const steps = [result];
+      
+      for (let i = 0; i < k; i++) {
+        result = result * result;
+        steps.push(result);
+      }
+      
+      return steps;
+    }
+    
+    // ============================================
+    // RENDERING
+    // ============================================
+    
+    function render() {
+      const rect = canvas.parentElement.getBoundingClientRect();
+      canvas.width = rect.width * window.devicePixelRatio;
+      canvas.height = rect.height * window.devicePixelRatio;
+      canvas.style.width = rect.width + 'px';
+      canvas.style.height = rect.height + 'px';
+      ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+      
+      const width = rect.width;
+      const height = rect.height;
+      
+      // Clear
+      ctx.fillStyle = '#0a0a14';
+      ctx.fillRect(0, 0, width, height);
+      
+      const margin = { top: 30, right: 30, bottom: 40, left: 60 };
+      const plotWidth = width - margin.left - margin.right;
+      const plotHeight = height - margin.top - margin.bottom;
+      
+      if (state.view === 'growth') {
+        renderGrowthCurve(margin, plotWidth, plotHeight);
+      } else if (state.view === 'steps') {
+        renderStepFunction(margin, plotWidth, plotHeight);
+      } else if (state.view === 'error') {
+        renderErrorDecay(margin, plotWidth, plotHeight);
+      }
+      
+      updateInfo();
+    }
+    
+    function renderGrowthCurve(margin, plotWidth, plotHeight) {
+      const k = state.k;
+      const numSteps = Math.pow(2, k);
+      const epsilon = Math.pow(2, -k);
+      
+      // Draw axes
+      ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(margin.left, margin.top);
+      ctx.lineTo(margin.left, margin.top + plotHeight);
+      ctx.lineTo(margin.left + plotWidth, margin.top + plotHeight);
+      ctx.stroke();
+      
+      // Y-axis: 1 to e+0.5
+      const yMin = 1;
+      const yMax = E + 0.3;
+      const yScale = plotHeight / (yMax - yMin);
+      
+      // X-axis: 0 to 1
+      const xScale = plotWidth;
+      
+      // Draw true exponential e^t
+      ctx.strokeStyle = 'rgba(255,230,109,0.5)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      for (let i = 0; i <= 100; i++) {
+        const t = i / 100;
+        const y = Math.exp(t);
+        const px = margin.left + t * xScale;
+        const py = margin.top + plotHeight - (y - yMin) * yScale;
+        if (i === 0) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
+      }
+      ctx.stroke();
+      
+      // Draw discrete approximation (1 + Δ)^n
+      ctx.strokeStyle = '#4ecdc4';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      
+      let value = 1;
+      let px = margin.left;
+      let py = margin.top + plotHeight - (value - yMin) * yScale;
+      ctx.moveTo(px, py);
+      
+      // Draw step-wise growth (but limit number of visible steps for performance)
+      const maxVisibleSteps = Math.min(numSteps, 500);
+      const stepSize = numSteps / maxVisibleSteps;
+      
+      for (let i = 1; i <= maxVisibleSteps; i++) {
+        const stepsCompleted = Math.floor(i * stepSize);
+        value = Math.pow(1 + epsilon, stepsCompleted);
+        const t = stepsCompleted / numSteps;
+        px = margin.left + t * xScale;
+        py = margin.top + plotHeight - (value - yMin) * yScale;
+        ctx.lineTo(px, py);
+      }
+      ctx.stroke();
+      
+      // Mark final value
+      const finalE = computeE(k);
+      ctx.fillStyle = '#4ecdc4';
+      ctx.beginPath();
+      ctx.arc(margin.left + plotWidth, margin.top + plotHeight - (finalE - yMin) * yScale, 5, 0, Math.PI * 2);
+      ctx.fill();
+      
+      // Mark true e
+      ctx.fillStyle = '#ffe66d';
+      ctx.beginPath();
+      ctx.arc(margin.left + plotWidth, margin.top + plotHeight - (E - yMin) * yScale, 5, 0, Math.PI * 2);
+      ctx.fill();
+      
+      // Labels
+      ctx.fillStyle = '#888';
+      ctx.font = '10px JetBrains Mono';
+      ctx.textAlign = 'center';
+      ctx.fillText('t = 0', margin.left, margin.top + plotHeight + 15);
+      ctx.fillText('t = 1', margin.left + plotWidth, margin.top + plotHeight + 15);
+      ctx.fillText(`2^${k} = ${numSteps} steps`, margin.left + plotWidth / 2, margin.top + plotHeight + 30);
+      
+      ctx.textAlign = 'right';
+      ctx.fillText('1', margin.left - 5, margin.top + plotHeight);
+      ctx.fillText('e', margin.left - 5, margin.top + plotHeight - (E - yMin) * yScale + 4);
+      
+      // Legend
+      ctx.textAlign = 'left';
+      ctx.fillStyle = '#ffe66d';
+      ctx.fillRect(margin.left + 10, margin.top + 10, 15, 3);
+      ctx.fillText('e^t (true)', margin.left + 30, margin.top + 14);
+      
+      ctx.fillStyle = '#4ecdc4';
+      ctx.fillRect(margin.left + 10, margin.top + 25, 15, 3);
+      ctx.fillText(`(1 + 2^-${k})^n`, margin.left + 30, margin.top + 29);
+    }
+    
+    function renderStepFunction(margin, plotWidth, plotHeight) {
+      const k = state.k;
+      const steps = computeEWithSteps(k);
+      
+      // Draw axes
+      ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(margin.left, margin.top);
+      ctx.lineTo(margin.left, margin.top + plotHeight);
+      ctx.lineTo(margin.left + plotWidth, margin.top + plotHeight);
+      ctx.stroke();
+      
+      // Y: 1 to 3
+      const yMin = 1;
+      const yMax = 3;
+      const yScale = plotHeight / (yMax - yMin);
+      
+      // X: 0 to k
+      const xScale = plotWidth / k;
+      
+      // Draw squaring steps
+      ctx.strokeStyle = '#4ecdc4';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      
+      for (let i = 0; i <= k; i++) {
+        const px = margin.left + i * xScale;
+        const py = margin.top + plotHeight - (steps[i] - yMin) * yScale;
+        
+        if (i === 0) {
+          ctx.moveTo(px, py);
+        } else {
+          // Horizontal line from previous point
+          ctx.lineTo(px, py);
+        }
+        
+        // Draw dot
+        ctx.fillStyle = '#4ecdc4';
+        ctx.beginPath();
+        ctx.arc(px, py, 4, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Continue line
+        ctx.beginPath();
+        ctx.moveTo(px, py);
+      }
+      ctx.stroke();
+      
+      // Draw e reference line
+      ctx.strokeStyle = 'rgba(255,230,109,0.5)';
+      ctx.setLineDash([5, 5]);
+      ctx.beginPath();
+      ctx.moveTo(margin.left, margin.top + plotHeight - (E - yMin) * yScale);
+      ctx.lineTo(margin.left + plotWidth, margin.top + plotHeight - (E - yMin) * yScale);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      
+      // Labels
+      ctx.fillStyle = '#888';
+      ctx.font = '10px JetBrains Mono';
+      ctx.textAlign = 'center';
+      
+      for (let i = 0; i <= k; i += Math.max(1, Math.floor(k / 10))) {
+        ctx.fillText(i.toString(), margin.left + i * xScale, margin.top + plotHeight + 15);
+      }
+      ctx.fillText('Squarings', margin.left + plotWidth / 2, margin.top + plotHeight + 30);
+      
+      ctx.textAlign = 'right';
+      ctx.fillText('1', margin.left - 5, margin.top + plotHeight);
+      ctx.fillText('e', margin.left - 5, margin.top + plotHeight - (E - yMin) * yScale + 4);
+      
+      // Title
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#4ecdc4';
+      ctx.fillText(`After ${k} squarings: ${steps[k].toFixed(8)}`, margin.left + plotWidth / 2, margin.top + 15);
+    }
+    
+    function renderErrorDecay(margin, plotWidth, plotHeight) {
+      // Show error vs k
+      
+      // Draw axes
+      ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(margin.left, margin.top);
+      ctx.lineTo(margin.left, margin.top + plotHeight);
+      ctx.lineTo(margin.left + plotWidth, margin.top + plotHeight);
+      ctx.stroke();
+      
+      const maxK = 25;
+      const xScale = plotWidth / maxK;
+      
+      // Compute errors
+      const errors = [];
+      for (let k = 1; k <= maxK; k++) {
+        const e_k = computeE(k);
+        errors.push(Math.abs(e_k - E));
+      }
+      
+      // Y: log scale
+      const logMin = -10;
+      const logMax = 0;
+      const yScale = plotHeight / (logMax - logMin);
+      
+      // Draw error line
+      ctx.strokeStyle = '#ff6b6b';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      
+      for (let k = 1; k <= maxK; k++) {
+        const px = margin.left + k * xScale;
+        const logErr = Math.log10(errors[k - 1] + 1e-15);
+        const py = margin.top + plotHeight - (logErr - logMin) * yScale;
+        
+        if (k === 1) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
+      }
+      ctx.stroke();
+      
+      // Draw dots at each k
+      ctx.fillStyle = '#ff6b6b';
+      for (let k = 1; k <= maxK; k++) {
+        const px = margin.left + k * xScale;
+        const logErr = Math.log10(errors[k - 1] + 1e-15);
+        const py = margin.top + plotHeight - (logErr - logMin) * yScale;
+        ctx.beginPath();
+        ctx.arc(px, py, 3, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      
+      // Highlight current k
+      const px = margin.left + state.k * xScale;
+      const logErr = Math.log10(errors[state.k - 1] + 1e-15);
+      const py = margin.top + plotHeight - (logErr - logMin) * yScale;
+      ctx.fillStyle = '#4ecdc4';
+      ctx.beginPath();
+      ctx.arc(px, py, 6, 0, Math.PI * 2);
+      ctx.fill();
+      
+      // Draw O(2^-k) reference line
+      ctx.strokeStyle = 'rgba(255,230,109,0.5)';
+      ctx.setLineDash([5, 5]);
+      ctx.beginPath();
+      for (let k = 1; k <= maxK; k++) {
+        const px = margin.left + k * xScale;
+        const theoretical = Math.log10(Math.pow(2, -k));
+        const py = margin.top + plotHeight - (theoretical - logMin) * yScale;
+        if (k === 1) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
+      }
+      ctx.stroke();
+      ctx.setLineDash([]);
+      
+      // Labels
+      ctx.fillStyle = '#888';
+      ctx.font = '10px JetBrains Mono';
+      ctx.textAlign = 'center';
+      
+      for (let k = 5; k <= maxK; k += 5) {
+        ctx.fillText(k.toString(), margin.left + k * xScale, margin.top + plotHeight + 15);
+      }
+      ctx.fillText('Resolution k', margin.left + plotWidth / 2, margin.top + plotHeight + 30);
+      
+      ctx.textAlign = 'right';
+      for (let p = 0; p >= logMin; p -= 2) {
+        const py = margin.top + plotHeight - (p - logMin) * yScale;
+        ctx.fillText(`10^${p}`, margin.left - 5, py + 4);
+      }
+      
+      // Legend
+      ctx.textAlign = 'left';
+      ctx.fillStyle = '#ff6b6b';
+      ctx.fillText('|estimate - e|', margin.left + 10, margin.top + 15);
+      ctx.fillStyle = '#ffe66d';
+      ctx.fillText('O(2^-k) reference', margin.left + 10, margin.top + 30);
+    }
+    
+    function updateInfo() {
+      const k = state.k;
+      const e_k = computeE(k);
+      const error = Math.abs(e_k - E);
+      
+      document.getElementById('current-k').textContent = k;
+      document.getElementById('stat-steps').textContent = Math.pow(2, k).toLocaleString();
+      document.getElementById('stat-size').textContent = Math.pow(2, -k).toExponential(2);
+      document.getElementById('stat-mults').textContent = k;
+      document.getElementById('stat-error').textContent = error.toExponential(1);
+      
+      // Update e display
+      const eStr = e_k.toFixed(15);
+      const trueStr = E.toFixed(15);
+      let match = 0;
+      for (let i = 0; i < Math.min(eStr.length, trueStr.length); i++) {
+        if (eStr[i] === trueStr[i]) match++;
+        else break;
+      }
+      
+      document.getElementById('e-estimate').innerHTML = 
+        `<span class="converging">${eStr.substring(0, match)}</span><span class="uncertain">${eStr.substring(match)}</span>`;
+      
+      // Update convergence table
+      const tbody = document.getElementById('convergence-body');
+      tbody.innerHTML = '';
+      for (let i = 1; i <= Math.min(k, 15); i++) {
+        const e_i = computeE(i);
+        const err = Math.abs(e_i - E);
+        tbody.innerHTML += `<tr>
+          <td class="k">${i}</td>
+          <td class="val">${e_i.toFixed(10)}</td>
+          <td class="err">${err.toExponential(1)}</td>
+        </tr>`;
+      }
+    }
+    
+    // ============================================
+    // CONTROLS
+    // ============================================
+    
+    document.querySelectorAll('[data-k]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        state.k = parseInt(btn.dataset.k);
+        document.querySelectorAll('[data-k]').forEach(b => 
+          b.classList.toggle('active', parseInt(b.dataset.k) === state.k)
+        );
+        render();
+      });
+    });
+    
+    document.querySelectorAll('[data-view]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        state.view = btn.dataset.view;
+        document.querySelectorAll('[data-view]').forEach(b => 
+          b.classList.toggle('active', b.dataset.view === state.view)
+        );
+        render();
+      });
+    });
+    
+    document.getElementById('btn-animate').addEventListener('click', function() {
+      if (state.isAnimating) {
+        state.isAnimating = false;
+        this.textContent = '▶ Animate';
+        this.classList.remove('active');
+      } else {
+        state.isAnimating = true;
+        state.animationK = 1;
+        this.textContent = '⏹ Stop';
+        this.classList.add('active');
+        animateRefinement();
+      }
+    });
+    
+    function animateRefinement() {
+      if (!state.isAnimating) return;
+      
+      state.k = state.animationK;
+      document.querySelectorAll('[data-k]').forEach(b => 
+        b.classList.toggle('active', parseInt(b.dataset.k) === state.k)
+      );
+      
+      render();
+      
+      state.animationK++;
+      if (state.animationK > 25) state.animationK = 1;
+      
+      setTimeout(animateRefinement, 500);
+    }
+    
+    // ============================================
+    // INIT
+    // ============================================
+    
+    window.addEventListener('resize', render);
+    render();
+  </script>
+</body>
+</html>

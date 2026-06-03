@@ -1,0 +1,50 @@
+venv/
+__pycache__/
+*.pyc
+
+.claude/
+.DS_Store
+.gitignore~
+*~
+*.dSYM/
+
+# Makefile binaries
+gpt_float
+gpt_int
+fp_test
+fp_determinism
+llama_int
+microgpt
+microgpt_int
+microgpt_int_v0
+
+# Legacy / profiling binaries (Makefile clean target)
+gpt
+gpt_int_instr
+gpt_int_prof
+
+# Sanitizer builds
+*_asan
+
+# Generated reference / benchmark artifacts
+input.txt
+gen_ref.py
+layer0_reference.bin
+layer0_ref_*.bin
+full_ref_*.bin
+multipos_ref_*.bin
+reference_tokens.txt
+
+# Downloaded checkpoints / model artifacts
+models/
+*.safetensors
+*.bin
+*.gguf
+*.pt
+*.pth
+*.onnx
+*.ckpt
+
+# Generated native weight files
+*.mgw
+*.mgwc

@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>int-llm — fp_math.h Visualizations</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: "JetBrains Mono", "SFMono-Regular", Menlo, monospace;
+      background: #f4f1e8;
+      color: #1d1b18;
+    }
+    main {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 32px 20px 48px;
+    }
+    h1 {
+      margin: 0 0 10px;
+      font-size: 2rem;
+      letter-spacing: 0.04em;
+    }
+    p.lead {
+      margin: 0 0 28px;
+      color: #574f44;
+      line-height: 1.5;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 18px;
+    }
+    section {
+      background: #fffdfa;
+      border: 1px solid #d9d2c3;
+      border-radius: 14px;
+      padding: 18px;
+      box-shadow: 0 8px 24px rgba(36, 28, 18, 0.06);
+    }
+    h2 {
+      margin: 0 0 10px;
+      font-size: 1rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #8a5a2b;
+    }
+    ul {
+      margin: 0;
+      padding-left: 18px;
+    }
+    li {
+      margin: 0 0 10px;
+      line-height: 1.4;
+    }
+    a {
+      color: #155e75;
+      text-decoration: none;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
+    .note {
+      margin-top: 24px;
+      padding: 14px 16px;
+      background: #ebe4d4;
+      border-left: 4px solid #8a5a2b;
+      color: #4e463d;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>int-llm — the math foundation, drawn</h1>
+    <p class="lead">
+      These are the seed visualizations behind <code>fp_math.h</code> — the pure-integer
+      Q16.48 math library at the core of <a href="https://github.com/nmicic/int-llm">int-llm</a>.
+      They were built first, to convince myself that transcendental constants and functions
+      can be approximated deterministically with nothing but integers, shifts and adds. The library is what
+      grew out of them; the LLM is what the library turned out to be good enough to run.
+      Exploratory aids, not proofs — but they show what the math actually does.
+    </p>
+
+    <div class="grid">
+      <section>
+        <h2>Constants from integers</h2>
+        <ul>
+          <li><a href="math/sqrt2-dyadic-refinement.html">√2 — dyadic refinement</a> · <code>fp_sqrt</code>, <code>isqrt128</code></li>
+          <li><a href="math/e-dyadic-refinement.html">e — dyadic refinement</a> · <code>fp_exp</code></li>
+          <li><a href="math/pi-dyadic-refinement.html">π — dyadic refinement</a> · <code>fp_compute_pi</code> (Machin)</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Functions &amp; the payoff</h2>
+        <ul>
+          <li><a href="math/transcendentals-visualization.html">Transcendentals</a> · <code>fp_exp</code>, <code>fp_log</code>, <code>fp_sincos</code></li>
+          <li><a href="math/euler-complete-journey.html">e<sup>iπ</sup> + 1 = 0 — the complete journey</a> · the most beautiful equation, in pure integers</li>
+        </ul>
+      </section>
+    </div>
+
+    <div class="note">
+      The full library reference is in <code>FP_MATH.md</code>. Euler's identity here is the
+      same one checked as a passing unit test in <code>fp_test.c</code> — computed end-to-end
+      in Q16.48 fixed point, no floating point anywhere.
+    </div>
+  </main>
+</body>
+</html>

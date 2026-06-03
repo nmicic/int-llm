@@ -1,0 +1,967 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Transcendentals as Refinement Invariants</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600&display=swap');
+    
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    body {
+      min-height: 100vh;
+      background: linear-gradient(145deg, #050508 0%, #0a0a14 40%, #10101a 70%, #080810 100%);
+      color: #e0e0e0;
+      font-family: 'JetBrains Mono', monospace;
+      padding: 12px;
+    }
+    
+    .header {
+      text-align: center;
+      margin-bottom: 10px;
+    }
+    
+    .header h1 {
+      font-size: 1.2rem;
+      font-weight: 300;
+      letter-spacing: 0.15em;
+      background: linear-gradient(90deg, #4ecdc4, #ffe66d, #a855f7, #ff6b6b);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    
+    .tabs {
+      display: flex;
+      justify-content: center;
+      gap: 4px;
+      margin-bottom: 12px;
+    }
+    
+    .tab {
+      padding: 8px 16px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 4px;
+      color: #666;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 0.65rem;
+      transition: all 0.15s ease;
+    }
+    
+    .tab:hover { background: rgba(255,255,255,0.08); color: #888; }
+    .tab.active { background: rgba(78,205,196,0.2); border-color: rgba(78,205,196,0.5); color: #4ecdc4; }
+    
+    .content { display: none; }
+    .content.active { display: block; }
+    
+    .panel-grid {
+      display: grid;
+      grid-template-columns: 1fr 300px;
+      gap: 12px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    
+    @media (max-width: 900px) {
+      .panel-grid { grid-template-columns: 1fr; }
+    }
+    
+    .canvas-container {
+      background: rgba(0,0,0,0.5);
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.04);
+      aspect-ratio: 4/3;
+    }
+    
+    canvas {
+      width: 100%;
+      height: 100%;
+      border-radius: 8px;
+    }
+    
+    .info-panel {
+      background: rgba(0,0,0,0.35);
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.04);
+      padding: 12px;
+      font-size: 0.55rem;
+    }
+    
+    .info-section {
+      margin-bottom: 10px;
+      padding: 10px;
+      background: rgba(255,255,255,0.02);
+      border-radius: 5px;
+      border: 1px solid rgba(255,255,255,0.04);
+    }
+    
+    .info-section.cyan { background: rgba(78,205,196,0.08); border-color: rgba(78,205,196,0.2); }
+    .info-section.yellow { background: rgba(255,230,109,0.08); border-color: rgba(255,230,109,0.2); }
+    .info-section.purple { background: rgba(168,85,247,0.08); border-color: rgba(168,85,247,0.2); }
+    .info-section.red { background: rgba(255,107,107,0.08); border-color: rgba(255,107,107,0.2); }
+    
+    .section-title {
+      font-size: 0.45rem;
+      letter-spacing: 0.12em;
+      color: #666;
+      margin-bottom: 6px;
+    }
+    
+    .section-title.cyan { color: #4ecdc4; }
+    .section-title.yellow { color: #ffe66d; }
+    .section-title.purple { color: #a855f7; }
+    .section-title.red { color: #ff6b6b; }
+    
+    .formula-box {
+      padding: 8px;
+      background: rgba(0,0,0,0.3);
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 0.5rem;
+      color: #888;
+      line-height: 1.6;
+    }
+    
+    .formula-box .hl { color: #4ecdc4; }
+    .formula-box .hl2 { color: #ffe66d; }
+    .formula-box .cm { color: #555; }
+    
+    .controls-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+    
+    .control-group {
+      display: flex;
+      gap: 3px;
+      align-items: center;
+    }
+    
+    .control-label {
+      font-size: 0.45rem;
+      color: #555;
+      padding-right: 6px;
+    }
+    
+    .btn {
+      padding: 4px 8px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 3px;
+      color: #666;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 0.55rem;
+      transition: all 0.15s ease;
+    }
+    
+    .btn:hover { background: rgba(255,255,255,0.08); color: #888; }
+    .btn.active { background: rgba(78,205,196,0.2); border-color: rgba(78,205,196,0.5); color: #4ecdc4; }
+    
+    input[type="range"] {
+      width: 100px;
+      height: 4px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 2px;
+      outline: none;
+    }
+    
+    .value-display {
+      font-size: 0.55rem;
+      color: #4ecdc4;
+      min-width: 60px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>TRANSCENDENTALS AS REFINEMENT INVARIANTS</h1>
+  </div>
+  
+  <div class="tabs">
+    <button class="tab active" data-tab="exp">exp(x)</button>
+    <button class="tab" data-tab="log">log(x)</button>
+    <button class="tab" data-tab="sincos">sin/cos</button>
+    <button class="tab" data-tab="euler">Euler Identity</button>
+  </div>
+  
+  <!-- EXP TAB -->
+  <div class="content active" id="tab-exp">
+    <div class="panel-grid">
+      <div class="canvas-container">
+        <canvas id="canvas-exp"></canvas>
+      </div>
+      <div class="info-panel">
+        <div class="controls-row">
+          <div class="control-group">
+            <span class="control-label">x =</span>
+            <input type="range" id="exp-x" min="-2" max="3" step="0.1" value="1">
+            <span class="value-display" id="exp-x-val">1.00</span>
+          </div>
+        </div>
+        <div class="controls-row">
+          <div class="control-group">
+            <span class="control-label">k =</span>
+            <button class="btn" data-k="1">1</button>
+            <button class="btn" data-k="5">5</button>
+            <button class="btn active" data-k="10">10</button>
+            <button class="btn" data-k="15">15</button>
+            <button class="btn" data-k="20">20</button>
+          </div>
+        </div>
+        
+        <div class="info-section cyan">
+          <div class="section-title cyan">DEFINITION</div>
+          <div class="formula-box">
+            <span class="hl">exp(x) := lim(k→∞) (1 + x/2^k)^(2^k)</span><br><br>
+            <span class="cm">Euler's method for y' = y:</span><br>
+            • Step size: <span class="hl2">Δ = 2^(-k)</span><br>
+            • Steps: <span class="hl2">N = 2^k</span><br>
+            • y(1) = <span class="hl">(1 + Δ)^N</span>
+          </div>
+        </div>
+        
+        <div class="info-section yellow">
+          <div class="section-title yellow">CURRENT VALUES</div>
+          <div class="formula-box">
+            <span class="cm">Input:</span> x = <span id="disp-exp-x" class="hl2">1</span><br>
+            <span class="cm">Resolution:</span> k = <span id="disp-exp-k" class="hl2">10</span><br>
+            <span class="cm">Steps:</span> 2^k = <span id="disp-exp-n" class="hl2">1024</span><br>
+            <span class="cm">Estimate:</span> <span id="disp-exp-est" class="hl">2.71828...</span><br>
+            <span class="cm">Actual:</span> <span id="disp-exp-actual">2.71828...</span>
+          </div>
+        </div>
+        
+        <div class="info-section">
+          <div class="section-title">INTEGER OPERATIONS</div>
+          <div class="formula-box">
+            <span class="cm">1. x >> k  (divide by 2^k)</span><br>
+            <span class="cm">2. FP_ONE + shifted  (1 + x/2^k)</span><br>
+            <span class="cm">3. Square k times (repeated squaring)</span><br>
+            <span class="hl2">No floats needed!</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- LOG TAB -->
+  <div class="content" id="tab-log">
+    <div class="panel-grid">
+      <div class="canvas-container">
+        <canvas id="canvas-log"></canvas>
+      </div>
+      <div class="info-panel">
+        <div class="controls-row">
+          <div class="control-group">
+            <span class="control-label">x =</span>
+            <input type="range" id="log-x" min="0.1" max="10" step="0.1" value="2">
+            <span class="value-display" id="log-x-val">2.00</span>
+          </div>
+        </div>
+        
+        <div class="info-section purple">
+          <div class="section-title purple">DEFINITION</div>
+          <div class="formula-box">
+            <span class="hl">log(x) := y such that exp(y) = x</span><br><br>
+            <span class="cm">Binary search with certified bounds:</span><br>
+            • Maintain [lo, hi] where<br>
+            • <span class="hl2">exp(lo) ≤ x ≤ exp(hi)</span><br>
+            • Bisect until converged
+          </div>
+        </div>
+        
+        <div class="info-section yellow">
+          <div class="section-title yellow">BINARY SEARCH STATE</div>
+          <div class="formula-box">
+            <span class="cm">Input:</span> x = <span id="disp-log-x" class="hl2">2</span><br>
+            <span class="cm">Lower:</span> <span id="disp-log-lo" class="hl">0.693...</span><br>
+            <span class="cm">Upper:</span> <span id="disp-log-hi" class="hl">0.693...</span><br>
+            <span class="cm">log(x):</span> <span id="disp-log-est" class="hl2">0.693...</span><br>
+            <span class="cm">Actual:</span> <span id="disp-log-actual">0.693...</span>
+          </div>
+        </div>
+        
+        <div class="info-section">
+          <div class="section-title">VERIFICATION</div>
+          <div class="formula-box">
+            exp(log(x)) = <span id="disp-log-verify" class="hl">2.000...</span><br>
+            <span class="cm">Should equal x</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- SIN/COS TAB -->
+  <div class="content" id="tab-sincos">
+    <div class="panel-grid">
+      <div class="canvas-container">
+        <canvas id="canvas-sincos"></canvas>
+      </div>
+      <div class="info-panel">
+        <div class="controls-row">
+          <div class="control-group">
+            <span class="control-label">θ =</span>
+            <input type="range" id="sincos-theta" min="0" max="6.28" step="0.05" value="0.785">
+            <span class="value-display" id="sincos-theta-val">π/4</span>
+          </div>
+        </div>
+        <div class="controls-row">
+          <div class="control-group">
+            <span class="control-label">Iterations:</span>
+            <button class="btn cordic-iter" data-iter="4">4</button>
+            <button class="btn cordic-iter" data-iter="8">8</button>
+            <button class="btn cordic-iter active" data-iter="16">16</button>
+            <button class="btn cordic-iter" data-iter="32">32</button>
+          </div>
+        </div>
+        
+        <div class="info-section red">
+          <div class="section-title red">CORDIC ALGORITHM</div>
+          <div class="formula-box">
+            <span class="hl">(cos θ, sin θ) := CORDIC rotation of (1,0)</span><br><br>
+            <span class="cm">Each iteration (shifts + adds only):</span><br>
+            • x' = x ∓ (y >> i)<br>
+            • y' = y ± (x >> i)<br>
+            • z' = z ∓ arctan(2^(-i))
+          </div>
+        </div>
+        
+        <div class="info-section yellow">
+          <div class="section-title yellow">CURRENT VALUES</div>
+          <div class="formula-box">
+            θ = <span id="disp-theta" class="hl2">0.785</span> rad<br>
+            sin(θ) = <span id="disp-sin" class="hl">0.707...</span><br>
+            cos(θ) = <span id="disp-cos" class="hl">0.707...</span><br>
+            sin² + cos² = <span id="disp-sum" class="hl2">1.000...</span>
+          </div>
+        </div>
+        
+        <div class="info-section">
+          <div class="section-title">WHY CORDIC?</div>
+          <div class="formula-box">
+            <span class="cm">• NO multiplication needed!</span><br>
+            <span class="cm">• Only shifts (>> i) and adds (±)</span><br>
+            <span class="cm">• Each iteration adds 1 bit precision</span><br>
+            <span class="hl2">Perfect for hardware / bitwise</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- EULER TAB -->
+  <div class="content" id="tab-euler">
+    <div class="panel-grid">
+      <div class="canvas-container">
+        <canvas id="canvas-euler"></canvas>
+      </div>
+      <div class="info-panel">
+        <div class="controls-row">
+          <div class="control-group">
+            <span class="control-label">θ from 0 to π:</span>
+            <input type="range" id="euler-theta" min="0" max="3.14159" step="0.02" value="3.14159">
+            <span class="value-display" id="euler-theta-val">π</span>
+          </div>
+        </div>
+        
+        <div class="info-section cyan">
+          <div class="section-title cyan">EULER'S IDENTITY</div>
+          <div class="formula-box">
+            <span class="hl" style="font-size:0.7rem">e^(iπ) = -1</span><br><br>
+            <span class="cm">Or equivalently:</span><br>
+            <span class="hl2">e^(iπ) + 1 = 0</span>
+          </div>
+        </div>
+        
+        <div class="info-section purple">
+          <div class="section-title purple">AS REFINEMENT INVARIANTS</div>
+          <div class="formula-box">
+            <span class="cm">exp(iθ) := (cos θ, sin θ)</span><br><br>
+            <span class="cm">At θ = π (half-turn):</span><br>
+            cos(π) = <span class="hl">-1</span><br>
+            sin(π) = <span class="hl">0</span><br><br>
+            <span class="cm">Therefore:</span><br>
+            exp(iπ) = (-1, 0) = <span class="hl2">-1</span>
+          </div>
+        </div>
+        
+        <div class="info-section yellow">
+          <div class="section-title yellow">CURRENT ROTATION</div>
+          <div class="formula-box">
+            θ = <span id="disp-euler-theta" class="hl2">π</span><br>
+            exp(iθ) = (<span id="disp-euler-cos">-1</span>, <span id="disp-euler-sin">0</span>)<br>
+            |exp(iθ)| = <span id="disp-euler-mag" class="hl">1.000</span>
+          </div>
+        </div>
+        
+        <div class="info-section">
+          <div class="section-title">THE COINCIDENCE</div>
+          <div class="formula-box">
+            <span class="cm">Three invariants meet:</span><br>
+            • <span class="hl">e</span> (growth invariant)<br>
+            • <span class="hl">π</span> (area/rotation invariant)<br>
+            • <span class="hl">i</span> (rotation by 90°)<br><br>
+            <span class="hl2">All defined from integers!</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ============================================
+    // STATE
+    // ============================================
+    const state = {
+      exp: { x: 1.0, k: 10 },
+      log: { x: 2.0 },
+      sincos: { theta: Math.PI/4, iterations: 16 },
+      euler: { theta: Math.PI }
+    };
+    
+    // ============================================
+    // COMPUTATION (Simulating Integer Arithmetic)
+    // ============================================
+    
+    function expDyadic(x, k) {
+      // (1 + x/2^k)^(2^k)
+      let base = 1 + x / Math.pow(2, k);
+      let result = base;
+      for (let i = 0; i < k; i++) {
+        result = result * result;
+      }
+      return result;
+    }
+    
+    function logBinarySearch(x, maxIter = 50) {
+      if (x <= 0) return { value: NaN, lo: 0, hi: 0 };
+      
+      let lo = x >= 1 ? 0 : x - 1;
+      let hi = x >= 1 ? x - 1 : 0;
+      
+      while (expDyadic(hi, 20) < x) hi *= 2;
+      while (expDyadic(lo, 20) > x) lo *= 2;
+      
+      for (let i = 0; i < maxIter; i++) {
+        let mid = (lo + hi) / 2;
+        if (expDyadic(mid, 20) <= x) {
+          lo = mid;
+        } else {
+          hi = mid;
+        }
+        if (hi - lo < 1e-12) break;
+      }
+      
+      return { value: (lo + hi) / 2, lo, hi };
+    }
+    
+    // CORDIC angles: arctan(2^(-i))
+    const cordicAngles = [];
+    for (let i = 0; i < 40; i++) {
+      cordicAngles.push(Math.atan(Math.pow(2, -i)));
+    }
+    const cordicGain = 0.6072529350088814;
+    
+    function cordic(theta, iterations) {
+      // Reduce to [-π, π]
+      while (theta > Math.PI) theta -= 2 * Math.PI;
+      while (theta < -Math.PI) theta += 2 * Math.PI;
+      
+      // Handle quadrants
+      let negateCos = false;
+      if (theta > Math.PI/2) {
+        theta = Math.PI - theta;
+        negateCos = true;
+      } else if (theta < -Math.PI/2) {
+        theta = -Math.PI - theta;
+        negateCos = true;
+      }
+      
+      let x = cordicGain;
+      let y = 0;
+      let z = theta;
+      
+      for (let i = 0; i < iterations && i < 40; i++) {
+        const xShift = x / Math.pow(2, i);
+        const yShift = y / Math.pow(2, i);
+        
+        if (z >= 0) {
+          const xNew = x - yShift;
+          const yNew = y + xShift;
+          z -= cordicAngles[i];
+          x = xNew;
+          y = yNew;
+        } else {
+          const xNew = x + yShift;
+          const yNew = y - xShift;
+          z += cordicAngles[i];
+          x = xNew;
+          y = yNew;
+        }
+      }
+      
+      if (negateCos) x = -x;
+      
+      return { cos: x, sin: y };
+    }
+    
+    // ============================================
+    // RENDERING
+    // ============================================
+    
+    function renderExp() {
+      const canvas = document.getElementById('canvas-exp');
+      const ctx = canvas.getContext('2d');
+      
+      const rect = canvas.parentElement.getBoundingClientRect();
+      canvas.width = rect.width * window.devicePixelRatio;
+      canvas.height = rect.height * window.devicePixelRatio;
+      canvas.style.width = rect.width + 'px';
+      canvas.style.height = rect.height + 'px';
+      ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+      
+      const width = rect.width;
+      const height = rect.height;
+      const margin = { top: 30, right: 30, bottom: 40, left: 50 };
+      const plotWidth = width - margin.left - margin.right;
+      const plotHeight = height - margin.top - margin.bottom;
+      
+      ctx.fillStyle = '#0a0a14';
+      ctx.fillRect(0, 0, width, height);
+      
+      // Axes
+      ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(margin.left, margin.top);
+      ctx.lineTo(margin.left, margin.top + plotHeight);
+      ctx.lineTo(margin.left + plotWidth, margin.top + plotHeight);
+      ctx.stroke();
+      
+      // X range: -2 to 3, Y range: 0 to 10
+      const xMin = -2, xMax = 3;
+      const yMin = 0, yMax = 10;
+      const xScale = plotWidth / (xMax - xMin);
+      const yScale = plotHeight / (yMax - yMin);
+      
+      // Draw true exp(x)
+      ctx.strokeStyle = 'rgba(255,230,109,0.5)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      for (let px = 0; px <= plotWidth; px++) {
+        const x = xMin + px / xScale;
+        const y = Math.exp(x);
+        const py = plotHeight - (y - yMin) * yScale;
+        if (px === 0) ctx.moveTo(margin.left + px, margin.top + py);
+        else ctx.lineTo(margin.left + px, margin.top + py);
+      }
+      ctx.stroke();
+      
+      // Draw approximation at current k
+      ctx.strokeStyle = '#4ecdc4';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      for (let px = 0; px <= plotWidth; px += 3) {
+        const x = xMin + px / xScale;
+        const y = expDyadic(x, state.exp.k);
+        const py = plotHeight - (y - yMin) * yScale;
+        if (px === 0) ctx.moveTo(margin.left + px, margin.top + py);
+        else ctx.lineTo(margin.left + px, margin.top + py);
+      }
+      ctx.stroke();
+      
+      // Mark current x
+      const curX = state.exp.x;
+      const curY = expDyadic(curX, state.exp.k);
+      const px = margin.left + (curX - xMin) * xScale;
+      const py = margin.top + plotHeight - (curY - yMin) * yScale;
+      
+      ctx.fillStyle = '#4ecdc4';
+      ctx.beginPath();
+      ctx.arc(px, py, 6, 0, Math.PI * 2);
+      ctx.fill();
+      
+      // Labels
+      ctx.fillStyle = '#888';
+      ctx.font = '10px JetBrains Mono';
+      ctx.textAlign = 'center';
+      ctx.fillText('x', margin.left + plotWidth / 2, margin.top + plotHeight + 25);
+      
+      ctx.textAlign = 'left';
+      ctx.fillStyle = '#ffe66d';
+      ctx.fillText('exp(x) true', margin.left + 10, margin.top + 15);
+      ctx.fillStyle = '#4ecdc4';
+      ctx.fillText(`(1 + x/2^${state.exp.k})^(2^${state.exp.k})`, margin.left + 10, margin.top + 28);
+      
+      // Update displays
+      document.getElementById('disp-exp-x').textContent = curX.toFixed(2);
+      document.getElementById('disp-exp-k').textContent = state.exp.k;
+      document.getElementById('disp-exp-n').textContent = Math.pow(2, state.exp.k);
+      document.getElementById('disp-exp-est').textContent = curY.toFixed(10);
+      document.getElementById('disp-exp-actual').textContent = Math.exp(curX).toFixed(10);
+    }
+    
+    function renderLog() {
+      const canvas = document.getElementById('canvas-log');
+      const ctx = canvas.getContext('2d');
+      
+      const rect = canvas.parentElement.getBoundingClientRect();
+      canvas.width = rect.width * window.devicePixelRatio;
+      canvas.height = rect.height * window.devicePixelRatio;
+      canvas.style.width = rect.width + 'px';
+      canvas.style.height = rect.height + 'px';
+      ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+      
+      const width = rect.width;
+      const height = rect.height;
+      const margin = { top: 30, right: 30, bottom: 40, left: 50 };
+      const plotWidth = width - margin.left - margin.right;
+      const plotHeight = height - margin.top - margin.bottom;
+      
+      ctx.fillStyle = '#0a0a14';
+      ctx.fillRect(0, 0, width, height);
+      
+      // Axes
+      ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(margin.left, margin.top);
+      ctx.lineTo(margin.left, margin.top + plotHeight);
+      ctx.lineTo(margin.left + plotWidth, margin.top + plotHeight);
+      ctx.stroke();
+      
+      // X: 0 to 10, Y: -2 to 3
+      const xMin = 0.1, xMax = 10;
+      const yMin = -2, yMax = 3;
+      const xScale = plotWidth / (xMax - xMin);
+      const yScale = plotHeight / (yMax - yMin);
+      
+      // y = 0 line
+      const y0 = margin.top + plotHeight - (0 - yMin) * yScale;
+      ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+      ctx.beginPath();
+      ctx.moveTo(margin.left, y0);
+      ctx.lineTo(margin.left + plotWidth, y0);
+      ctx.stroke();
+      
+      // Draw log(x)
+      ctx.strokeStyle = '#a855f7';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      for (let px = 0; px <= plotWidth; px++) {
+        const x = xMin + px / xScale;
+        if (x <= 0) continue;
+        const y = Math.log(x);
+        const py = plotHeight - (y - yMin) * yScale;
+        if (px === 0) ctx.moveTo(margin.left + px, margin.top + py);
+        else ctx.lineTo(margin.left + px, margin.top + py);
+      }
+      ctx.stroke();
+      
+      // Current point
+      const curX = state.log.x;
+      const logRes = logBinarySearch(curX);
+      const px = margin.left + (curX - xMin) * xScale;
+      const py = margin.top + plotHeight - (logRes.value - yMin) * yScale;
+      
+      ctx.fillStyle = '#a855f7';
+      ctx.beginPath();
+      ctx.arc(px, py, 6, 0, Math.PI * 2);
+      ctx.fill();
+      
+      // Update displays
+      document.getElementById('disp-log-x').textContent = curX.toFixed(2);
+      document.getElementById('disp-log-lo').textContent = logRes.lo.toFixed(10);
+      document.getElementById('disp-log-hi').textContent = logRes.hi.toFixed(10);
+      document.getElementById('disp-log-est').textContent = logRes.value.toFixed(10);
+      document.getElementById('disp-log-actual').textContent = Math.log(curX).toFixed(10);
+      document.getElementById('disp-log-verify').textContent = expDyadic(logRes.value, 20).toFixed(10);
+    }
+    
+    function renderSinCos() {
+      const canvas = document.getElementById('canvas-sincos');
+      const ctx = canvas.getContext('2d');
+      
+      const rect = canvas.parentElement.getBoundingClientRect();
+      canvas.width = rect.width * window.devicePixelRatio;
+      canvas.height = rect.height * window.devicePixelRatio;
+      canvas.style.width = rect.width + 'px';
+      canvas.style.height = rect.height + 'px';
+      ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+      
+      const width = rect.width;
+      const height = rect.height;
+      
+      ctx.fillStyle = '#0a0a14';
+      ctx.fillRect(0, 0, width, height);
+      
+      const cx = width / 2;
+      const cy = height / 2;
+      const radius = Math.min(width, height) * 0.35;
+      
+      // Unit circle
+      ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+      ctx.stroke();
+      
+      // Axes
+      ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+      ctx.beginPath();
+      ctx.moveTo(cx - radius * 1.2, cy);
+      ctx.lineTo(cx + radius * 1.2, cy);
+      ctx.moveTo(cx, cy - radius * 1.2);
+      ctx.lineTo(cx, cy + radius * 1.2);
+      ctx.stroke();
+      
+      // Current angle
+      const theta = state.sincos.theta;
+      const sc = cordic(theta, state.sincos.iterations);
+      
+      // Draw angle arc
+      ctx.strokeStyle = '#ffe66d';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(cx, cy, radius * 0.3, 0, -theta, theta < 0);
+      ctx.stroke();
+      
+      // Draw radius to point
+      const px = cx + sc.cos * radius;
+      const py = cy - sc.sin * radius;
+      
+      ctx.strokeStyle = '#4ecdc4';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(px, py);
+      ctx.stroke();
+      
+      // Point on circle
+      ctx.fillStyle = '#ff6b6b';
+      ctx.beginPath();
+      ctx.arc(px, py, 6, 0, Math.PI * 2);
+      ctx.fill();
+      
+      // Projections
+      ctx.strokeStyle = 'rgba(78,205,196,0.5)';
+      ctx.setLineDash([3, 3]);
+      ctx.beginPath();
+      ctx.moveTo(px, py);
+      ctx.lineTo(px, cy);  // vertical to x-axis
+      ctx.moveTo(px, py);
+      ctx.lineTo(cx, py);  // horizontal to y-axis
+      ctx.stroke();
+      ctx.setLineDash([]);
+      
+      // Labels
+      ctx.fillStyle = '#4ecdc4';
+      ctx.font = '11px JetBrains Mono';
+      ctx.textAlign = 'center';
+      ctx.fillText(`cos θ = ${sc.cos.toFixed(4)}`, px, cy + 20);
+      
+      ctx.fillStyle = '#ff6b6b';
+      ctx.textAlign = 'left';
+      ctx.fillText(`sin θ = ${sc.sin.toFixed(4)}`, cx + 10, py);
+      
+      // Update displays
+      document.getElementById('disp-theta').textContent = theta.toFixed(4);
+      document.getElementById('disp-sin').textContent = sc.sin.toFixed(10);
+      document.getElementById('disp-cos').textContent = sc.cos.toFixed(10);
+      document.getElementById('disp-sum').textContent = (sc.sin*sc.sin + sc.cos*sc.cos).toFixed(10);
+    }
+    
+    function renderEuler() {
+      const canvas = document.getElementById('canvas-euler');
+      const ctx = canvas.getContext('2d');
+      
+      const rect = canvas.parentElement.getBoundingClientRect();
+      canvas.width = rect.width * window.devicePixelRatio;
+      canvas.height = rect.height * window.devicePixelRatio;
+      canvas.style.width = rect.width + 'px';
+      canvas.style.height = rect.height + 'px';
+      ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+      
+      const width = rect.width;
+      const height = rect.height;
+      
+      ctx.fillStyle = '#0a0a14';
+      ctx.fillRect(0, 0, width, height);
+      
+      const cx = width / 2;
+      const cy = height / 2;
+      const radius = Math.min(width, height) * 0.35;
+      
+      // Unit circle
+      ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+      ctx.stroke();
+      
+      // Axes
+      ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+      ctx.beginPath();
+      ctx.moveTo(cx - radius * 1.3, cy);
+      ctx.lineTo(cx + radius * 1.3, cy);
+      ctx.moveTo(cx, cy - radius * 1.3);
+      ctx.lineTo(cx, cy + radius * 1.3);
+      ctx.stroke();
+      
+      // Mark key points
+      ctx.fillStyle = '#4ecdc4';
+      ctx.font = '10px JetBrains Mono';
+      
+      // 1 on real axis
+      ctx.beginPath();
+      ctx.arc(cx + radius, cy, 4, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillText('1', cx + radius + 8, cy + 4);
+      
+      // -1 on real axis
+      ctx.fillStyle = '#ff6b6b';
+      ctx.beginPath();
+      ctx.arc(cx - radius, cy, 4, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillText('-1', cx - radius - 20, cy + 4);
+      
+      // i on imaginary axis
+      ctx.fillStyle = '#a855f7';
+      ctx.beginPath();
+      ctx.arc(cx, cy - radius, 4, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillText('i', cx + 8, cy - radius);
+      
+      // Current rotation
+      const theta = state.euler.theta;
+      const sc = cordic(theta, 32);
+      
+      // Draw arc from 1 to current point
+      ctx.strokeStyle = '#ffe66d';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(cx, cy, radius, 0, -theta, theta > 0);
+      ctx.stroke();
+      
+      // Current point
+      const px = cx + sc.cos * radius;
+      const py = cy - sc.sin * radius;
+      
+      ctx.fillStyle = '#ffe66d';
+      ctx.beginPath();
+      ctx.arc(px, py, 8, 0, Math.PI * 2);
+      ctx.fill();
+      
+      // Vector from origin
+      ctx.strokeStyle = 'rgba(255,230,109,0.5)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(px, py);
+      ctx.stroke();
+      
+      // Title
+      ctx.fillStyle = '#fff';
+      ctx.font = '14px JetBrains Mono';
+      ctx.textAlign = 'center';
+      if (Math.abs(theta - Math.PI) < 0.1) {
+        ctx.fillText('e^(iπ) = -1', cx, 30);
+      } else {
+        ctx.fillText(`e^(i·${(theta/Math.PI).toFixed(2)}π)`, cx, 30);
+      }
+      
+      // Update displays
+      const thetaStr = Math.abs(theta - Math.PI) < 0.01 ? 'π' : (theta/Math.PI).toFixed(3) + 'π';
+      document.getElementById('disp-euler-theta').textContent = thetaStr;
+      document.getElementById('disp-euler-cos').textContent = sc.cos.toFixed(6);
+      document.getElementById('disp-euler-sin').textContent = sc.sin.toFixed(6);
+      document.getElementById('disp-euler-mag').textContent = Math.sqrt(sc.cos*sc.cos + sc.sin*sc.sin).toFixed(6);
+    }
+    
+    // ============================================
+    // EVENT HANDLERS
+    // ============================================
+    
+    // Tabs
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.content').forEach(c => c.classList.remove('active'));
+        tab.classList.add('active');
+        document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+        render();
+      });
+    });
+    
+    // Exp controls
+    document.getElementById('exp-x').addEventListener('input', (e) => {
+      state.exp.x = parseFloat(e.target.value);
+      document.getElementById('exp-x-val').textContent = state.exp.x.toFixed(2);
+      renderExp();
+    });
+    
+    document.querySelectorAll('[data-k]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        state.exp.k = parseInt(btn.dataset.k);
+        document.querySelectorAll('[data-k]').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        renderExp();
+      });
+    });
+    
+    // Log controls
+    document.getElementById('log-x').addEventListener('input', (e) => {
+      state.log.x = parseFloat(e.target.value);
+      document.getElementById('log-x-val').textContent = state.log.x.toFixed(2);
+      renderLog();
+    });
+    
+    // SinCos controls
+    document.getElementById('sincos-theta').addEventListener('input', (e) => {
+      state.sincos.theta = parseFloat(e.target.value);
+      const thetaStr = Math.abs(state.sincos.theta - Math.PI/4) < 0.1 ? 'π/4' :
+                       Math.abs(state.sincos.theta - Math.PI/2) < 0.1 ? 'π/2' :
+                       Math.abs(state.sincos.theta - Math.PI) < 0.1 ? 'π' :
+                       state.sincos.theta.toFixed(2);
+      document.getElementById('sincos-theta-val').textContent = thetaStr;
+      renderSinCos();
+    });
+    
+    document.querySelectorAll('.cordic-iter').forEach(btn => {
+      btn.addEventListener('click', () => {
+        state.sincos.iterations = parseInt(btn.dataset.iter);
+        document.querySelectorAll('.cordic-iter').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        renderSinCos();
+      });
+    });
+    
+    // Euler controls
+    document.getElementById('euler-theta').addEventListener('input', (e) => {
+      state.euler.theta = parseFloat(e.target.value);
+      const thetaStr = Math.abs(state.euler.theta - Math.PI) < 0.1 ? 'π' :
+                       (state.euler.theta/Math.PI).toFixed(2) + 'π';
+      document.getElementById('euler-theta-val').textContent = thetaStr;
+      renderEuler();
+    });
+    
+    // Render
+    function render() {
+      const active = document.querySelector('.tab.active').dataset.tab;
+      if (active === 'exp') renderExp();
+      else if (active === 'log') renderLog();
+      else if (active === 'sincos') renderSinCos();
+      else if (active === 'euler') renderEuler();
+    }
+    
+    window.addEventListener('resize', render);
+    render();
+  </script>
+</body>
+</html>

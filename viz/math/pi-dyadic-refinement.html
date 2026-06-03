@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>π from Dyadic Refinement - Integer Geometry</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600&display=swap');
+    
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    body {
+      min-height: 100vh;
+      background: linear-gradient(145deg, #050508 0%, #0a0a14 40%, #10101a 70%, #080810 100%);
+      color: #e0e0e0;
+      font-family: 'JetBrains Mono', monospace;
+      padding: 12px;
+    }
+    
+    .header {
+      text-align: center;
+      margin-bottom: 12px;
+    }
+    
+    .header h1 {
+      font-size: 1.3rem;
+      font-weight: 300;
+      letter-spacing: 0.2em;
+      background: linear-gradient(90deg, #ff6b6b, #4ecdc4, #ffe66d, #a855f7);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    
+    .header p {
+      font-size: 0.5rem;
+      letter-spacing: 0.12em;
+      color: #555;
+      margin-top: 4px;
+    }
+    
+    .pi-display {
+      text-align: center;
+      padding: 15px;
+      background: rgba(0,0,0,0.4);
+      border-radius: 8px;
+      margin-bottom: 12px;
+      border: 1px solid rgba(255,230,109,0.2);
+    }
+    
+    .pi-label {
+      font-size: 0.5rem;
+      color: #666;
+      letter-spacing: 0.15em;
+      margin-bottom: 4px;
+    }
+    
+    .pi-value {
+      font-size: 2rem;
+      font-weight: 300;
+      color: #ffe66d;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    
+    .pi-value .converging {
+      color: #4ecdc4;
+    }
+    
+    .pi-value .uncertain {
+      color: #ff6b6b;
+      opacity: 0.5;
+    }
+    
+    .pi-comparison {
+      font-size: 0.55rem;
+      color: #666;
+      margin-top: 6px;
+    }
+    
+    .pi-comparison span {
+      color: #888;
+    }
+    
+    .controls {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+    
+    .control-group {
+      display: flex;
+      gap: 3px;
+      padding: 4px;
+      background: rgba(255,255,255,0.02);
+      border-radius: 4px;
+      align-items: center;
+    }
+    
+    .control-label {
+      font-size: 0.45rem;
+      color: #555;
+      padding: 0 6px;
+    }
+    
+    .btn {
+      padding: 5px 10px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 3px;
+      color: #666;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 0.6rem;
+      transition: all 0.15s ease;
+    }
+    
+    .btn:hover { background: rgba(255,255,255,0.08); color: #888; }
+    .btn.active { background: rgba(78,205,196,0.2); border-color: rgba(78,205,196,0.5); color: #4ecdc4; }
+    .btn.active-yellow { background: rgba(255,230,109,0.2); border-color: rgba(255,230,109,0.5); color: #ffe66d; }
+    .btn.active-purple { background: rgba(168,85,247,0.2); border-color: rgba(168,85,247,0.5); color: #a855f7; }
+    
+    .main-container {
+      display: grid;
+      grid-template-columns: 1fr 320px;
+      gap: 12px;
+      max-width: 1300px;
+      margin: 0 auto;
+    }
+    
+    @media (max-width: 950px) {
+      .main-container { grid-template-columns: 1fr; }
+    }
+    
+    .canvas-container {
+      background: rgba(0,0,0,0.5);
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.04);
+      aspect-ratio: 1;
+      max-height: 65vh;
+      position: relative;
+    }
+    
+    #main-canvas {
+      width: 100%;
+      height: 100%;
+      border-radius: 8px;
+    }
+    
+    .info-panel {
+      background: rgba(0,0,0,0.35);
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.04);
+      padding: 12px;
+      font-size: 0.6rem;
+      overflow-y: auto;
+      max-height: 65vh;
+    }
+    
+    .info-section {
+      margin-bottom: 10px;
+      padding: 10px;
+      background: rgba(255,255,255,0.02);
+      border-radius: 5px;
+      border: 1px solid rgba(255,255,255,0.04);
+    }
+    
+    .info-section.highlight { background: rgba(255,107,107,0.08); border-color: rgba(255,107,107,0.2); }
+    .info-section.green { background: rgba(78,205,196,0.08); border-color: rgba(78,205,196,0.2); }
+    .info-section.yellow { background: rgba(255,230,109,0.08); border-color: rgba(255,230,109,0.2); }
+    .info-section.purple { background: rgba(168,85,247,0.08); border-color: rgba(168,85,247,0.2); }
+    
+    .section-title {
+      font-size: 0.45rem;
+      letter-spacing: 0.12em;
+      color: #666;
+      margin-bottom: 6px;
+    }
+    
+    .section-title.red { color: #ff6b6b; }
+    .section-title.green { color: #4ecdc4; }
+    .section-title.yellow { color: #ffe66d; }
+    .section-title.purple { color: #a855f7; }
+    
+    .formula-box {
+      padding: 8px;
+      background: rgba(0,0,0,0.3);
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 0.52rem;
+      color: #888;
+      line-height: 1.6;
+    }
+    
+    .formula-box .hl { color: #ffe66d; }
+    .formula-box .cm { color: #555; }
+    .formula-box .green { color: #4ecdc4; }
+    .formula-box .red { color: #ff6b6b; }
+    .formula-box .purple { color: #a855f7; }
+    
+    .stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+    }
+    
+    .stat-item {
+      padding: 6px;
+      background: rgba(0,0,0,0.2);
+      border-radius: 4px;
+      text-align: center;
+    }
+    
+    .stat-item .label {
+      font-size: 0.4rem;
+      color: #555;
+      letter-spacing: 0.1em;
+    }
+    
+    .stat-item .value {
+      font-size: 0.75rem;
+      color: #4ecdc4;
+      margin-top: 2px;
+    }
+    
+    .stat-item .value.yellow { color: #ffe66d; }
+    .stat-item .value.red { color: #ff6b6b; }
+    .stat-item .value.purple { color: #a855f7; }
+    
+    .bounds-display {
+      padding: 8px;
+      background: rgba(0,0,0,0.3);
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 0.5rem;
+      text-align: center;
+    }
+    
+    .bound-lower { color: #4ecdc4; }
+    .bound-upper { color: #ff6b6b; }
+    .bound-pi { color: #ffe66d; font-weight: 600; }
+    
+    .convergence-bar {
+      height: 20px;
+      background: rgba(0,0,0,0.3);
+      border-radius: 4px;
+      margin: 8px 0;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .convergence-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #4ecdc4, #ffe66d);
+      border-radius: 4px;
+      transition: width 0.5s ease;
+    }
+    
+    .convergence-marker {
+      position: absolute;
+      top: 0;
+      height: 100%;
+      width: 2px;
+      background: #ff6b6b;
+    }
+    
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.45rem;
+    }
+    
+    .legend-color {
+      width: 12px;
+      height: 12px;
+      border-radius: 2px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>π FROM DYADIC REFINEMENT</h1>
+    <p>INTEGER GEOMETRY • CUBES NOT CIRCLES • REFINEMENT INVARIANT</p>
+  </div>
+  
+  <div class="pi-display">
+    <div class="pi-label">ESTIMATED π (A<sub>k</sub> = 4 × N<sub>k</sub> / 2<sup>2k</sup>)</div>
+    <div class="pi-value" id="pi-estimate">3.14159265...</div>
+    <div class="pi-comparison">
+      actual π = <span>3.14159265358979...</span>
+    </div>
+  </div>
+  
+  <div class="controls">
+    <div class="control-group">
+      <span class="control-label">RESOLUTION k</span>
+      <button class="btn" data-k="1">1</button>
+      <button class="btn" data-k="2">2</button>
+      <button class="btn" data-k="3">3</button>
+      <button class="btn active" data-k="4">4</button>
+      <button class="btn" data-k="5">5</button>
+      <button class="btn" data-k="6">6</button>
+      <button class="btn" data-k="7">7</button>
+      <button class="btn" data-k="8">8</button>
+    </div>
+    
+    <div class="control-group">
+      <span class="control-label">SHOW</span>
+      <button class="btn active" id="btn-grid">Grid</button>
+      <button class="btn active-yellow" id="btn-inside">Inside</button>
+      <button class="btn active-purple" id="btn-boundary">Boundary</button>
+      <button class="btn active" id="btn-circle">Circle</button>
+    </div>
+    
+    <div class="control-group">
+      <button class="btn" id="btn-animate">▶ Animate</button>
+      <button class="btn" id="btn-fullcount">Show All k</button>
+    </div>
+  </div>
+  
+  <div class="main-container">
+    <div class="canvas-container">
+      <canvas id="main-canvas"></canvas>
+    </div>
+    
+    <div class="info-panel">
+      <div class="info-section yellow">
+        <div class="section-title yellow">CORE INSIGHT</div>
+        <div style="font-size:0.52rem;color:#cca;line-height:1.6;">
+          <strong style="color:#fff">π emerges from counting squares!</strong><br><br>
+          No circles needed. No floats needed.<br>
+          Just: <span style="color:#4ecdc4">(2i+1)² + (2j+1)² ≤ 2^(2k+2)</span><br><br>
+          Pure integer arithmetic → π as limit.
+        </div>
+      </div>
+      
+      <div class="info-section green">
+        <div class="section-title green">CURRENT LEVEL k = <span id="current-k">4</span></div>
+        <div class="stats-grid">
+          <div class="stat-item">
+            <div class="label">GRID SIZE</div>
+            <div class="value" id="stat-grid">16×16</div>
+          </div>
+          <div class="stat-item">
+            <div class="label">TOTAL CELLS</div>
+            <div class="value" id="stat-total">256</div>
+          </div>
+          <div class="stat-item">
+            <div class="label">INSIDE (N<sub>k</sub>)</div>
+            <div class="value yellow" id="stat-inside">201</div>
+          </div>
+          <div class="stat-item">
+            <div class="label">BOUNDARY</div>
+            <div class="value purple" id="stat-boundary">24</div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="info-section highlight">
+        <div class="section-title red">INTEGER BOUNDS TRAPPING π</div>
+        <div class="bounds-display">
+          <span class="bound-lower" id="bound-lower">3.125</span>
+          <span style="color:#666"> ≤ </span>
+          <span class="bound-pi">π</span>
+          <span style="color:#666"> ≤ </span>
+          <span class="bound-upper" id="bound-upper">3.1875</span>
+        </div>
+        <div style="font-size:0.45rem;color:#888;text-align:center;margin-top:6px;">
+          Gap: <span id="bound-gap" style="color:#ffe66d">0.0625</span> = O(2<sup>-k</sup>)
+        </div>
+      </div>
+      
+      <div class="info-section">
+        <div class="section-title">CONVERGENCE TO π</div>
+        <div class="convergence-bar">
+          <div class="convergence-fill" id="convergence-fill" style="width:0%"></div>
+          <div class="convergence-marker" id="convergence-marker" style="left:50%"></div>
+        </div>
+        <div style="font-size:0.45rem;color:#666;display:flex;justify-content:space-between;">
+          <span>3.0</span>
+          <span style="color:#ffe66d">π ≈ 3.14159</span>
+          <span>3.3</span>
+        </div>
+      </div>
+      
+      <div class="info-section purple">
+        <div class="section-title purple">THE INTEGER TEST</div>
+        <div class="formula-box">
+          <span class="cm">// Cell (i,j) center in integer coords:</span><br>
+          <span class="hl">X = 2i + 1</span><br>
+          <span class="hl">Y = 2j + 1</span><br><br>
+          <span class="cm">// Inside quarter-disk test:</span><br>
+          <span class="green">X² + Y² ≤ 2^(2k+2)</span><br><br>
+          <span class="cm">// Area estimate:</span><br>
+          <span class="purple">A_k = 4 × N_k / 2^(2k)</span><br><br>
+          <span class="cm">// Definition of π:</span><br>
+          <span class="hl">π = lim(k→∞) A_k</span>
+        </div>
+      </div>
+      
+      <div class="info-section">
+        <div class="section-title">ERROR ANALYSIS</div>
+        <div style="font-size:0.5rem;color:#888;line-height:1.6;">
+          <div>Error at level k: <span style="color:#ff6b6b">O(2<sup>-k</sup>)</span></div>
+          <div style="margin-top:4px;">Each refinement adds ~1 bit of precision</div>
+          <div style="margin-top:4px;">
+            k=4: ~1 decimal digit<br>
+            k=7: ~2 decimal digits<br>
+            k=10: ~3 decimal digits
+          </div>
+        </div>
+      </div>
+      
+      <div class="info-section">
+        <div class="section-title">VISUAL LEGEND</div>
+        <div class="legend">
+          <div class="legend-item">
+            <div class="legend-color" style="background:rgba(78,205,196,0.6)"></div>
+            <span style="color:#4ecdc4">Inside cells (counted)</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-color" style="background:rgba(168,85,247,0.6)"></div>
+            <span style="color:#a855f7">Boundary cells (uncertain)</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-color" style="background:transparent;border:1px solid rgba(255,255,255,0.3)"></div>
+            <span>Outside cells</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-color" style="background:transparent;border:2px solid #ffe66d;border-radius:50%"></div>
+            <span style="color:#ffe66d">True quarter circle</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ============================================
+    // STATE
+    // ============================================
+    const state = {
+      k: 4,
+      showGrid: true,
+      showInside: true,
+      showBoundary: true,
+      showCircle: true,
+      isAnimating: false,
+      animationK: 1
+    };
+    
+    const canvas = document.getElementById('main-canvas');
+    const ctx = canvas.getContext('2d');
+    
+    const PI = Math.PI;
+    const PI_STRING = '3.14159265358979323846';
+    
+    // ============================================
+    // CORE COMPUTATION - INTEGER ONLY
+    // ============================================
+    
+    /**
+     * Test if cell (i,j) center is inside quarter-disk
+     * Using ONLY integer arithmetic!
+     * 
+     * Cell center: x = (2i+1)/2^(k+1), y = (2j+1)/2^(k+1)
+     * Inside test: x² + y² ≤ 1
+     * Integer form: (2i+1)² + (2j+1)² ≤ 2^(2k+2)
+     */
+    function isInsideQuarterDisk(i, j, k) {
+      const X = 2 * i + 1;  // Integer!
+      const Y = 2 * j + 1;  // Integer!
+      const radiusSquared = Math.pow(2, 2 * k + 2);  // Integer: 2^(2k+2)
+      return X * X + Y * Y <= radiusSquared;
+    }
+    
+    /**
+     * Test if cell (i,j) is completely inside quarter-disk
+     * Check all 4 corners of the cell
+     */
+    function isCompletelyInside(i, j, k) {
+      const scale = Math.pow(2, k);
+      // Cell spans from i/scale to (i+1)/scale on each axis
+      // Check if the FARTHEST corner (i+1, j+1) is inside
+      const x = (i + 1) / scale;
+      const y = (j + 1) / scale;
+      return x * x + y * y <= 1;
+    }
+    
+    /**
+     * Test if cell (i,j) intersects the quarter-disk boundary
+     * (has at least one corner inside and one outside)
+     */
+    function intersectsBoundary(i, j, k) {
+      const scale = Math.pow(2, k);
+      const corners = [
+        [i / scale, j / scale],
+        [(i + 1) / scale, j / scale],
+        [i / scale, (j + 1) / scale],
+        [(i + 1) / scale, (j + 1) / scale]
+      ];
+      
+      let insideCount = 0;
+      for (const [x, y] of corners) {
+        if (x * x + y * y <= 1) insideCount++;
+      }
+      
+      return insideCount > 0 && insideCount < 4;
+    }
+    
+    /**
+     * Count cells and compute estimates at resolution k
+     * Returns all the statistics we need
+     */
+    function computeAtResolution(k) {
+      const gridSize = Math.pow(2, k);
+      const totalCells = gridSize * gridSize;
+      
+      let insideCount = 0;      // N_k: cells with center inside
+      let completelyInside = 0; // N_k^-: cells completely inside
+      let boundaryCount = 0;    // Cells touching boundary
+      
+      for (let i = 0; i < gridSize; i++) {
+        for (let j = 0; j < gridSize; j++) {
+          const centerInside = isInsideQuarterDisk(i, j, k);
+          const fullyInside = isCompletelyInside(i, j, k);
+          const touchesBoundary = intersectsBoundary(i, j, k);
+          
+          if (centerInside) insideCount++;
+          if (fullyInside) completelyInside++;
+          if (touchesBoundary) boundaryCount++;
+        }
+      }
+      
+      // Outer count: includes all cells that touch the disk
+      const outerCount = completelyInside + boundaryCount;
+      
+      // Area estimate: A_k = 4 * N_k / 2^(2k)
+      const areaEstimate = 4 * insideCount / totalCells;
+      
+      // Bounds
+      const lowerBound = 4 * completelyInside / totalCells;
+      const upperBound = 4 * outerCount / totalCells;
+      
+      // Error from true π
+      const error = Math.abs(areaEstimate - PI);
+      
+      return {
+        k,
+        gridSize,
+        totalCells,
+        insideCount,
+        completelyInside,
+        boundaryCount,
+        outerCount,
+        areaEstimate,
+        lowerBound,
+        upperBound,
+        error,
+        boundGap: upperBound - lowerBound
+      };
+    }
+    
+    // ============================================
+    // RENDERING
+    // ============================================
+    
+    function render() {
+      const k = state.k;
+      const stats = computeAtResolution(k);
+      
+      // Set canvas size
+      const rect = canvas.parentElement.getBoundingClientRect();
+      const size = Math.min(rect.width, rect.height);
+      canvas.width = size * window.devicePixelRatio;
+      canvas.height = size * window.devicePixelRatio;
+      canvas.style.width = size + 'px';
+      canvas.style.height = size + 'px';
+      ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+      
+      // Clear
+      ctx.fillStyle = '#0a0a14';
+      ctx.fillRect(0, 0, size, size);
+      
+      const margin = 40;
+      const plotSize = size - 2 * margin;
+      const gridSize = stats.gridSize;
+      const cellSize = plotSize / gridSize;
+      
+      // Draw cells
+      for (let i = 0; i < gridSize; i++) {
+        for (let j = 0; j < gridSize; j++) {
+          const x = margin + i * cellSize;
+          const y = margin + (gridSize - 1 - j) * cellSize; // Flip y for math coords
+          
+          const centerInside = isInsideQuarterDisk(i, j, k);
+          const touchesBoundary = intersectsBoundary(i, j, k);
+          
+          // Fill cell based on status
+          if (touchesBoundary && state.showBoundary) {
+            ctx.fillStyle = 'rgba(168, 85, 247, 0.4)';
+            ctx.fillRect(x, y, cellSize, cellSize);
+          } else if (centerInside && state.showInside) {
+            ctx.fillStyle = 'rgba(78, 205, 196, 0.4)';
+            ctx.fillRect(x, y, cellSize, cellSize);
+          }
+          
+          // Draw grid lines
+          if (state.showGrid && cellSize > 3) {
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+            ctx.lineWidth = 0.5;
+            ctx.strokeRect(x, y, cellSize, cellSize);
+          }
+        }
+      }
+      
+      // Draw the true quarter circle
+      if (state.showCircle) {
+        ctx.strokeStyle = '#ffe66d';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(margin, margin + plotSize, plotSize, -Math.PI / 2, 0);
+        ctx.stroke();
+      }
+      
+      // Draw axes
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(margin, margin + plotSize);
+      ctx.lineTo(margin + plotSize, margin + plotSize);
+      ctx.moveTo(margin, margin);
+      ctx.lineTo(margin, margin + plotSize);
+      ctx.stroke();
+      
+      // Labels
+      ctx.fillStyle = '#666';
+      ctx.font = '10px JetBrains Mono';
+      ctx.textAlign = 'center';
+      ctx.fillText('0', margin, margin + plotSize + 15);
+      ctx.fillText('1', margin + plotSize, margin + plotSize + 15);
+      ctx.textAlign = 'right';
+      ctx.fillText('0', margin - 5, margin + plotSize + 4);
+      ctx.fillText('1', margin - 5, margin + 4);
+      
+      // Update info panel
+      updateInfo(stats);
+    }
+    
+    function updateInfo(stats) {
+      // Update current k
+      document.getElementById('current-k').textContent = stats.k;
+      
+      // Update stats
+      document.getElementById('stat-grid').textContent = `${stats.gridSize}×${stats.gridSize}`;
+      document.getElementById('stat-total').textContent = stats.totalCells.toLocaleString();
+      document.getElementById('stat-inside').textContent = stats.insideCount.toLocaleString();
+      document.getElementById('stat-boundary').textContent = stats.boundaryCount.toLocaleString();
+      
+      // Update bounds
+      document.getElementById('bound-lower').textContent = stats.lowerBound.toFixed(6);
+      document.getElementById('bound-upper').textContent = stats.upperBound.toFixed(6);
+      document.getElementById('bound-gap').textContent = stats.boundGap.toFixed(6);
+      
+      // Update π estimate display
+      const estimate = stats.areaEstimate;
+      const estimateStr = estimate.toFixed(10);
+      const piStr = PI.toFixed(10);
+      
+      // Find how many digits match
+      let matchCount = 0;
+      for (let i = 0; i < Math.min(estimateStr.length, piStr.length); i++) {
+        if (estimateStr[i] === piStr[i]) matchCount++;
+        else break;
+      }
+      
+      // Color the matching part
+      const piDisplay = document.getElementById('pi-estimate');
+      const matchPart = estimateStr.substring(0, matchCount);
+      const restPart = estimateStr.substring(matchCount);
+      piDisplay.innerHTML = `<span class="converging">${matchPart}</span><span class="uncertain">${restPart}</span>`;
+      
+      // Update convergence bar
+      const minPi = 3.0;
+      const maxPi = 3.3;
+      const range = maxPi - minPi;
+      
+      // Fill shows the estimate
+      const fillPct = ((estimate - minPi) / range) * 100;
+      document.getElementById('convergence-fill').style.width = `${Math.max(0, Math.min(100, fillPct))}%`;
+      
+      // Marker shows true π
+      const markerPct = ((PI - minPi) / range) * 100;
+      document.getElementById('convergence-marker').style.left = `${markerPct}%`;
+    }
+    
+    // ============================================
+    // CONTROLS
+    // ============================================
+    
+    document.querySelectorAll('[data-k]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        state.k = parseInt(btn.dataset.k);
+        document.querySelectorAll('[data-k]').forEach(b => 
+          b.classList.toggle('active', parseInt(b.dataset.k) === state.k)
+        );
+        render();
+      });
+    });
+    
+    document.getElementById('btn-grid').addEventListener('click', function() {
+      state.showGrid = !state.showGrid;
+      this.classList.toggle('active', state.showGrid);
+      render();
+    });
+    
+    document.getElementById('btn-inside').addEventListener('click', function() {
+      state.showInside = !state.showInside;
+      this.classList.toggle('active-yellow', state.showInside);
+      render();
+    });
+    
+    document.getElementById('btn-boundary').addEventListener('click', function() {
+      state.showBoundary = !state.showBoundary;
+      this.classList.toggle('active-purple', state.showBoundary);
+      render();
+    });
+    
+    document.getElementById('btn-circle').addEventListener('click', function() {
+      state.showCircle = !state.showCircle;
+      this.classList.toggle('active', state.showCircle);
+      render();
+    });
+    
+    document.getElementById('btn-animate').addEventListener('click', function() {
+      if (state.isAnimating) {
+        state.isAnimating = false;
+        this.textContent = '▶ Animate';
+        this.classList.remove('active');
+      } else {
+        state.isAnimating = true;
+        state.animationK = 1;
+        this.textContent = '⏹ Stop';
+        this.classList.add('active');
+        animateRefinement();
+      }
+    });
+    
+    function animateRefinement() {
+      if (!state.isAnimating) return;
+      
+      state.k = state.animationK;
+      
+      // Update button states
+      document.querySelectorAll('[data-k]').forEach(b => 
+        b.classList.toggle('active', parseInt(b.dataset.k) === state.k)
+      );
+      
+      render();
+      
+      state.animationK++;
+      if (state.animationK > 8) {
+        state.animationK = 1;
+      }
+      
+      setTimeout(animateRefinement, 1000);
+    }
+    
+    document.getElementById('btn-fullcount').addEventListener('click', function() {
+      let output = 'Convergence to π:\n\n';
+      output += 'k\tGrid\t\tN_k\t\tA_k\t\t\tError\n';
+      output += '─'.repeat(70) + '\n';
+      
+      for (let k = 1; k <= 12; k++) {
+        const stats = computeAtResolution(k);
+        const gridStr = `${stats.gridSize}×${stats.gridSize}`.padEnd(10);
+        const countStr = stats.insideCount.toString().padEnd(12);
+        const estimateStr = stats.areaEstimate.toFixed(10);
+        const errorStr = stats.error.toExponential(2);
+        output += `${k}\t${gridStr}\t${countStr}\t${estimateStr}\t${errorStr}\n`;
+      }
+      
+      output += '\n─'.repeat(70);
+      output += '\nTrue π = 3.14159265358979...';
+      output += '\nEach level adds ~1 bit of precision (error halves)';
+      
+      alert(output);
+    });
+    
+    // ============================================
+    // RESIZE HANDLER
+    // ============================================
+    
+    window.addEventListener('resize', render);
+    
+    // ============================================
+    // INIT
+    // ============================================
+    
+    render();
+  </script>
+</body>
+</html>
