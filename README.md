@@ -4,13 +4,38 @@
 
 Copyright (c) 2026 Nenad Mićić — Apache-2.0
 
-A **fun experiment**: an integer-only LLM stack in pure C. Take an open LLM, convert it to **integer-only** (Q16.48 fixed point), and run the model core with **zero floating-point arithmetic** — plus a tiny character GPT you can *train* int-only end to end. It's slow on purpose. The point is to see how far pure-integer arithmetic goes, with deterministic bitstreams gated across the tested x86_64/gcc and arm64/clang environments. No `libm` in the integer compute core — you can even convert the whole model to an all-integer `.mgw` weight file and run inference straight from that.
+**Bit-exact, deterministic LLM inference in pure-integer C.**
+
+int-llm runs a real Llama-family checkpoint (TinyLlama-1.1B) through a fixed-point integer compute core — no `float`, no `double`, no `libm` — and produces **identical raw bitstreams across platforms and compilers**. The determinism gate hashes the integer outputs and matches a committed golden hash on x86_64/gcc and arm64/clang. Run it today, run it next year on different hardware: same bits.
+
+The integer path also matches the float reference **token-for-token** (80/80 on the greedy verification gate), and a tiny character-level GPT *trains and samples* entirely in integer arithmetic. You can even convert the whole model into an all-integer `.mgw` weight file and run inference straight from that — the original floating-point weights never reappear in the compute path.
+
+This is a feasibility demo, deliberately slow and simple. What it provides is something most LLM stacks don't: a **reproducible, exact reference** — an oracle — for anyone working on quantization, numerical drift, regression testing, or deterministic inference.
 
 - `gpt_int`: integer-only Q16.48 character GPT — trains **and** samples from a small downloaded names dataset
 - `gpt_float`: float32 baseline (for comparison)
 - `llama_int`: integer-only Llama-family inference (TinyLlama-1.1B), CPU, dynamic `config.json`
 
 The design rule is strict: machine-native representation stays in the core, and human-readable interpretation happens only at the boundary.
+
+## Why Q16.48? Why build an oracle first?
+
+The obvious objection: *Q16.48 in an `int64_t` is wastefully wide — why not INT8 like everyone else?*
+
+Because the width is the point. **Q16.48 is the oracle, not the product.**
+
+Q16.48 carries 48 fractional bits (resolution ≈ 3.55e-15) — enough to hold normal float16/bfloat16 model weights *exactly* inside its range. That has a powerful consequence: when the integer path disagrees with the float reference, the disagreement is a **bug**, never rounding ambiguity. Combined with the determinism gate, this gives a fixed ground truth that doesn't drift across machines, compilers, or time.
+
+Lower-precision work desperately needs that ground truth. My own GPU experiments (see [`gpu/`](gpu/)) showed why: an INT8 tensor-core path with per-tensor quantization matched the reference on only 29/80 tokens. Without an exact oracle, there is no way to attribute that — quantization error? kernel bug? bad scaling scheme? With the oracle, every deviation is measurable and debuggable.
+
+So the methodology is deliberate:
+
+1. **First, build a path that is exact and reproducible** — wide fixed point, bit-identical across platforms, verified token-for-token against the float reference.
+2. **Then descend the precision ladder** (Q16.16, Q8.24, INT8 SIMD, ...) with a working compass, measuring every step against fixed ground truth instead of against another approximation.
+
+This repo is step 1, done properly. Step 2 is future work — and anyone exploring deterministic inference, fixed-point quantization, or cross-platform numerical reproducibility can reuse the oracle as-is.
+
+If you only want the math, [`fp_math.h`](fp_math.h) is a self-contained, dependency-free Q16.48 integer math library (sqrt, exp, log, sin/cos via CORDIC, sigmoid, SiLU, deterministic PRNG) — see [`FP_MATH.md`](FP_MATH.md).
 
 ## Quick Start
 
