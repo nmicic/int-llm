@@ -72,7 +72,8 @@
  * ALGORITHMS
  *
  *   Multiplication:  (int128)a * b >> 48
- *   Division:        (int128)a << 48 / b
+ *   Division:        sign(a) * ((uint128)|a| << 48 / b)   (shift on magnitude:
+ *                    left-shifting a negative value is UB in C99/C11)
  *   Square root:     Newton-Raphson on isqrt(x << 48) with __builtin_clzll
  *                    initial guess. 5-7 iterations for 48-bit precision.
  *   Fast sqrt:       64-bit Newton only, r << 24 trick. ~24-bit precision.
@@ -153,7 +154,15 @@ static inline fixed_t fp_mul(fixed_t a, fixed_t b) {
 }
 
 static inline fixed_t fp_div(fixed_t a, fixed_t b) {
-    return (fixed_t)(((int128_t)a << FP_PRECISION) / b);
+    /* Left-shifting a negative value is UB in C99/C11 (6.5.7p4) — UBSan
+     * traps on it. Shift the magnitude as unsigned instead, then reapply
+     * the sign. The unsigned negation also makes a == INT64_MIN safe.
+     * Truncating division of the signed numerator is unchanged, so results
+     * are bit-identical to the old shift wherever it happened to work. */
+    uint128_t mag = (a < 0) ? -(uint128_t)a : (uint128_t)a;
+    int128_t num = (int128_t)(mag << FP_PRECISION);
+    if (a < 0) num = -num;
+    return (fixed_t)(num / b);
 }
 
 static inline fixed_t fp_abs(fixed_t a) {
@@ -161,7 +170,12 @@ static inline fixed_t fp_abs(fixed_t a) {
 }
 
 static inline fixed_t fp_from_int(int x) {
-    return (fixed_t)x << FP_PRECISION;
+    /* Same UB rule as fp_div: never left-shift a negative. Widening to
+     * 128 bits keeps x == -32768 exact (its magnitude shifted is 2^63,
+     * which only fits back in int64 after the negation). */
+    uint128_t mag = (x < 0) ? -(uint128_t)x : (uint128_t)x;
+    int128_t r = (int128_t)(mag << FP_PRECISION);
+    return (fixed_t)(x < 0 ? -r : r);
 }
 
 static inline fixed_t fp_max(fixed_t a, fixed_t b) {
