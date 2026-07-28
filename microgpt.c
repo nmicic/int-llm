@@ -9,7 +9,7 @@
  * Inspired by Andrej Karpathy's microgpt.py (a ~200-line Python char GPT):
  *   https://gist.github.com/karpathy/8627fe009c40f57531cb18360106ce95
  * This is an independent from-scratch C rebuild, not a port. The config here
- * (N_EMBD=32, N_HEAD=4, N_LAYER=1, 14,656 params) is the float baseline that
+ * (N_EMBD=32, N_HEAD=4, N_LAYER=1, 14,272 params) is the float baseline that
  * pairs with the integer variant microgpt_int.c for the three-way benchmark.
  * A leaner speed-tuned variant (sub-20 ms/step) lives at:
  *   https://gist.github.com/nmicic/35316463f3c5e8e9fe8eb599b3842b58
