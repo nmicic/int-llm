@@ -1,6 +1,6 @@
 # HW test: Pico 2 (RP2350, RISC-V mode) — fp_math.h determinism gate
 
-Status: **PASS** (2026-07-28, tree `8b16a00bb912-dirty`*)
+Status: **PASS** (2026-07-28, tree `1b706ecf6c7f`)
 
 Same physical board as `PICO2_ARM_DET`, switched to the RP2350's Hazard3
 RISC-V execution mode (`board_build.mcu = rp2350-riscv`). Runs
@@ -16,10 +16,6 @@ verifies against the committed golden `tests/determinism_golden.txt`.
 
 One silicon die, two ISAs, one hash — the ARM/RISC-V pair on identical
 transistors is about as clean a cross-ISA determinism check as it gets.
-
-\* dirty = the fp_math.h dual-backend vendoring + `FP_DET_NO_MAIN` split
-were not yet committed when the test ran; the result file's firmware
-SHA-256 pins the exact image.
 
 Raw capture: `results/2026-07-28-pico2-riscv-det.txt`.
 

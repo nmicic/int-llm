@@ -1,6 +1,6 @@
 # HW test: Heltec WiFi LoRa 32 V3 — fp_math.h determinism gate on Xtensa
 
-Status: **PASS** (2026-07-28, tree `8b16a00bb912-dirty`*)
+Status: **PASS** (2026-07-28, tree `1b706ecf6c7f`)
 
 First Xtensa target — the third ISA family (ARM, RISC-V, Xtensa) to
 reproduce the golden hash in this repo. Runs `fp_det_compute()` from
@@ -14,10 +14,6 @@ pin, which prepare.sh verifies against the committed golden
 | host reference (arm64 macOS, `__int128` backend) + committed golden | `c0d933ea340452ec` | — |
 | Pico 2 ARM mode (Cortex-M33 @ 150 MHz), previous fastest | `c0d933ea340452ec` | 4137 ms |
 | **Heltec V3 (ESP32-S3 Xtensa LX7 @ 240 MHz)** | **`c0d933ea340452ec`** | 3883 ms |
-
-\* dirty = the fp_math.h dual-backend vendoring + `FP_DET_NO_MAIN` split
-were not yet committed when the test ran; the result file's firmware
-SHA-256 pins the exact image.
 
 Raw capture: `results/2026-07-28-heltec-s3-det.txt`.
 

@@ -1,13 +1,20 @@
-# run 2026-07-27T23:02:18Z
+# run 2026-07-28T18:39:22Z
 # target-folder PICO2_RISCV_GPT env pico2_riscv_gpt
-# firmware sha256 84f13103f2eea24a56fcae68a59d49eea81efaeafdf9fcbaa5a9302b5ec68785
+# firmware sha256 2dd2a0bc247b47f3ab9ae7a689a5a9a3d6255b81a128fec32cb6f4d06216b529
 # platform https://github.com/maxgerhardt/platform-raspberrypi.git#aa70b802be8851668053d4f09734e4089fe41932
+# source sha256 4374894cdf41569768101307fb609e123984da5034a88d19fa8c7ca26cfcaf73  src/microgpt_int.c
+# source sha256 eadb57c9f9f6dde451a7b71d3f0ba43b62cbe2ba76938ec0e83ee942d5046b72  src/main.cpp
+# source sha256 f9d7c329c325ca426f0786ae651d45e9d907971a66d41d11cc8dac264591444f  include/build_info.h
+# source sha256 38520b39b86f5fe90f7d92cd3a3026877e16370f15a85c9b5f22079e291abf6c  include/fp_math.h
+# source sha256 c7d9b5a8cdf026f55e380e7b9bbb1c413e784d659fc5bff98b1b3a0a150c3bf5  include/gpt_pin.h
+# source sha256 812f4e97c619bed8ef901813a0fca3fa6c8532e1a51d22e7da50dd69f6c31c37  include/model_mgw.h
 # PlatformIO Core             6.1.19
 # Python                      3.14.6-final.0
 # PlatformIO Core Directory   $HOME/.platformio
 # PlatformIO Core Executable  /opt/homebrew/bin/platformio
 # Python Executable           /opt/homebrew/Cellar/platformio/6.1.19_1/libexec/bin/python
-port: <REDACTED>
+port: usbmodem-<REDACTED>
+sample  5: maha
 sample  6: kaia
 sample  7: ramiar
 sample  8: anall
@@ -23,6 +30,6 @@ sample 17: diaria
 sample 18: sarona
 sample 19: jahel
 sample 20: karin
-target pico2-riscv-gpt arch rv32 tree 8b16a00bb912-dirty PROFILE microgpt hash ff4bc4bf7d4fd99d (3758 ms, informational)
+target pico2-riscv-gpt arch rv32 tree 1b706ecf6c7f PROFILE microgpt hash ff4bc4bf7d4fd99d (3755 ms, informational)
 profile: PASS (target reproduces the host sample stream)
-capture: OK target=pico2-riscv-gpt arch=rv32 tree=8b16a00bb912-dirty profile=microgpt hash=ff4bc4bf7d4fd99d
+capture: OK target=pico2-riscv-gpt arch=rv32 tree=1b706ecf6c7f profile=microgpt hash=ff4bc4bf7d4fd99d

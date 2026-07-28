@@ -1,6 +1,6 @@
 # CPU test: x86-64 AMD (Zen 4) Linux server — native gcc
 
-Status: **PASS** (2026-07-28, tree `8b16a00bb912-dirty`*)
+Status: **PASS** (2026-07-28, tree `1b706ecf6c7f`)
 
 Native-Linux target, no PlatformIO: `../native_check.sh` copies the sources
 plus the committed `model.mgw` over ssh, builds with the distro gcc, and
@@ -12,9 +12,9 @@ microarchitecture.
 | check | result | runtime (informational) |
 |---|---|---|
 | determinism, default backend (`__int128`) | `c0d933ea340452ec` (= golden) | 5 ms |
-| determinism, `-DFP_MATH_FORCE_PORTABLE` | `c0d933ea340452ec` (= golden) | 18 ms |
+| determinism, `-DFP_MATH_FORCE_PORTABLE` | `c0d933ea340452ec` (= golden) | 19 ms |
 | `--load model.mgw` inference, 20 samples | byte-identical to macOS host | 2 ms |
-| full training stdout | byte-identical to macOS host | 2091 ms |
+| full training stdout | byte-identical to macOS host | 2095 ms |
 | `--save` after training | `.mgw` byte-identical to the committed `model.mgw` | — |
 
 So an AMD/gcc/Linux box, an Intel/gcc/Linux box, an arm64/clang/macOS
@@ -26,10 +26,6 @@ TinyLlama-1.1B exported to a native 8.8 GB `.mgw`, `--native --generate
 --max-new-tokens 16` over the four preset prompts, weights served from a
 tmpfs ramdisk — the generated token streams are identical to the Intel
 box's and unchanged from the pre-merge build (~1.5 tok/s here).
-
-\* dirty = the fp_math.h dual-backend + `.mgw` save/load changes were
-staged but not yet committed when the record was made; the transcript's
-source SHA-256 lines pin the exact inputs.
 
 Raw capture: `results/2026-07-28-x86-amd-zen4.txt`.
 

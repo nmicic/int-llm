@@ -1,6 +1,6 @@
 # HW test: ESP32-C6 devkit — microgpt_int INFERENCE on RISC-V
 
-Status: **PASS** (2026-07-28, tree `8b16a00bb912-dirty`*)
+Status: **PASS** (2026-07-28, tree `1b706ecf6c7f`)
 
 Same train-big/run-small loop as `XIAO_RP2040_GPT`, now on RISC-V: the
 model was trained on an arm64 Mac (`./gpt_int --save model.mgw`, 5000
@@ -13,16 +13,12 @@ run's 20 sampled names **byte-for-byte**, PRNG stream included.
 | | samples hash | runtime (informational) |
 |---|---|---|
 | host reference (arm64 macOS, `__int128` backend, same entry points) | `ff4bc4bf7d4fd99d` | — |
-| XIAO RP2040 (Cortex-M0+ @ 133 MHz) | `ff4bc4bf7d4fd99d` | 6717 ms |
+| XIAO RP2040 (Cortex-M0+ @ 133 MHz) | `ff4bc4bf7d4fd99d` | 6724 ms |
 | **ESP32-C6 (RISC-V rv32imac @ 160 MHz)** | **`ff4bc4bf7d4fd99d`** | 2047 ms (20 samples, ~100 ms/name) |
 
 Samples: kayla, daia, lee, kayan, maha, kaia, ramiar, anall, ainale, kelel,
 malana, arile, marion, avile, calan, kaylia, diaria, sarona, jahel, karin —
 identical to the Mac's `./gpt_int --save` / `--load` output.
-
-\* dirty = the fp_math.h dual-backend vendoring + .mgw save/load +
-`MGPT_NO_MAIN`/`mgpt_load_mem` additions were not yet committed when the
-test ran; the result file's firmware SHA-256 pins the exact image.
 
 Raw capture: `results/2026-07-28-esp32-c6-gpt.txt` (capture attaches
 mid-iteration; the hash covers all 20 samples).

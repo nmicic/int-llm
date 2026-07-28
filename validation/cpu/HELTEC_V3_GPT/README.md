@@ -1,6 +1,6 @@
 # HW test: Heltec WiFi LoRa 32 V3 — microgpt_int INFERENCE on Xtensa
 
-Status: **PASS** (2026-07-28, tree `8b16a00bb912-dirty`*)
+Status: **PASS** (2026-07-28, tree `1b706ecf6c7f`)
 
 Same train-big/run-small loop as the other `*_GPT` targets, now on the
 third ISA family: the model was trained on an arm64 Mac (`./gpt_int
@@ -20,10 +20,6 @@ two-limb backend) — reproducing the Mac training run's 20 sampled names
 Samples: kayla, daia, lee, kayan, maha, kaia, ramiar, anall, ainale, kelel,
 malana, arile, marion, avile, calan, kaylia, diaria, sarona, jahel, karin —
 identical to the Mac's `./gpt_int --save` / `--load` output.
-
-\* dirty = the fp_math.h dual-backend vendoring + .mgw save/load +
-`MGPT_NO_MAIN`/`mgpt_load_mem` additions were not yet committed when the
-test ran; the result file's firmware SHA-256 pins the exact image.
 
 Raw capture: `results/2026-07-28-heltec-s3-gpt.txt`.
 

@@ -1,6 +1,6 @@
 # HW test: ESP32-C6 devkit — fp_math.h determinism gate on RISC-V
 
-Status: **PASS** (2026-07-28, tree `8b16a00bb912-dirty`*)
+Status: **PASS** (2026-07-28, tree `1b706ecf6c7f`)
 
 Runs `fp_det_compute()` from `fp_determinism.c` (built with
 `-DFP_DET_NO_MAIN`, portable two-limb backend — rv32imac has no `__int128`
@@ -11,10 +11,6 @@ against the committed golden `tests/determinism_golden.txt`.
 |---|---|---|
 | host reference (arm64 macOS, `__int128` backend) + committed golden | `c0d933ea340452ec` | — |
 | **ESP32-C6 (RISC-V rv32imac @ 160 MHz)** | **`c0d933ea340452ec`** | 5631 ms |
-
-\* dirty = the fp_math.h dual-backend vendoring + `FP_DET_NO_MAIN` split
-were not yet committed when the test ran; the result file's firmware
-SHA-256 pins the exact image.
 
 Raw capture: `results/2026-07-28-esp32-c6-det.txt`.
 

@@ -1,6 +1,6 @@
 # HW test: Seeed Studio XIAO RP2040 — microgpt_int INFERENCE on Armv6-M
 
-Status: **PASS** (2026-07-28, tree `8b16a00bb912-dirty`*)
+Status: **PASS** (2026-07-28, tree `1b706ecf6c7f`)
 
 The train-big/run-small loop, closed on a $5 microcontroller: the model was
 trained on an arm64 Mac (`./gpt_int --save model.mgw`, 5000 steps, Q16.48
@@ -13,15 +13,11 @@ run's 20 sampled names **byte-for-byte**, PRNG stream included.
 | | samples hash | runtime (informational) |
 |---|---|---|
 | host reference (arm64 macOS, `__int128` backend, same entry points) | `ff4bc4bf7d4fd99d` | — |
-| **XIAO RP2040 Cortex-M0+ (Armv6-M)** | **`ff4bc4bf7d4fd99d`** | 6717 ms (20 samples, ~335 ms/name) |
+| **XIAO RP2040 Cortex-M0+ (Armv6-M)** | **`ff4bc4bf7d4fd99d`** | 6724 ms (20 samples, ~336 ms/name) |
 
 Samples: kayla, daia, lee, kayan, maha, kaia, ramiar, anall, ainale, kelel,
 malana, arile, marion, avile, calan, kaylia, diaria, sarona, jahel, karin —
 identical to the Mac's `./gpt_int --save` / `--load` output.
-
-\* dirty = the fp_math.h dual-backend vendoring + .mgw save/load +
-`MGPT_NO_MAIN`/`mgpt_load_mem` additions were not yet committed when the
-test ran; the result file's firmware SHA-256 pins the exact image.
 
 Raw capture: `results/2026-07-28-xiao-rp2040-gpt.txt` (capture attaches
 mid-iteration, so the file starts at sample 3; the hash covers all 20).

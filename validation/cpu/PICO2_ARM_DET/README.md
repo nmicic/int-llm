@@ -1,6 +1,6 @@
 # HW test: Pico 2 (RP2350, ARM mode) — fp_math.h determinism gate
 
-Status: **PASS** (2026-07-28, tree `8b16a00bb912-dirty`*)
+Status: **PASS** (2026-07-28, tree `1b706ecf6c7f`)
 
 Runs `fp_det_compute()` from `fp_determinism.c` (built with
 `-DFP_DET_NO_MAIN`, portable two-limb backend — Cortex-M33 is 32-bit, no
@@ -15,10 +15,6 @@ against the committed golden `tests/determinism_golden.txt`.
 
 The same physical chip also passes in its RISC-V execution mode — see
 `PICO2_RISCV_DET` (5448 ms on the Hazard3 cores).
-
-\* dirty = the fp_math.h dual-backend vendoring + `FP_DET_NO_MAIN` split
-were not yet committed when the test ran; the result file's firmware
-SHA-256 pins the exact image.
 
 Raw capture: `results/2026-07-28-pico2-arm-det.txt`.
 

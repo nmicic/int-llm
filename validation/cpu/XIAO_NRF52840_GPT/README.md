@@ -1,6 +1,6 @@
 # HW test: Seeed XIAO nRF52840 — microgpt_int INFERENCE on Cortex-M4F
 
-Status: **PASS** (2026-07-28, tree `8b16a00bb912-dirty`*)
+Status: **PASS** (2026-07-28, tree `1b706ecf6c7f`)
 
 Same train-big/run-small loop as the other `*_GPT` targets: Mac-trained
 115,576-byte `.mgw` baked into flash rodata, firmware runs
@@ -11,7 +11,7 @@ sampled names **byte-for-byte**, PRNG stream included.
 | | samples hash | runtime (informational) |
 |---|---|---|
 | host reference (arm64 macOS, `__int128` backend, same entry points) | `ff4bc4bf7d4fd99d` | — |
-| XIAO RP2040 (Cortex-M0+ @ 133 MHz) | `ff4bc4bf7d4fd99d` | 6717 ms |
+| XIAO RP2040 (Cortex-M0+ @ 133 MHz) | `ff4bc4bf7d4fd99d` | 6724 ms |
 | **XIAO nRF52840 (Cortex-M4F @ 64 MHz)** | **`ff4bc4bf7d4fd99d`** | 3424 ms (20 samples, ~171 ms/name, ~36 tok/s) |
 
 The 64 MHz M4F beats the 133 MHz M0+ ~2× — the M4's single-cycle
@@ -20,11 +20,6 @@ The 64 MHz M4F beats the 133 MHz M0+ ~2× — the M4's single-cycle
 Samples: kayla, daia, lee, kayan, maha, kaia, ramiar, anall, ainale, kelel,
 malana, arile, marion, avile, calan, kaylia, diaria, sarona, jahel, karin —
 identical to the Mac's `./gpt_int --save` / `--load` output.
-
-\* dirty = the fp_math.h dual-backend vendoring + .mgw save/load +
-`MGPT_NO_MAIN`/`mgpt_load_mem` additions, plus the static-workspace fix
-below, not yet committed; the result file's firmware SHA-256 pins the
-exact image.
 
 Raw capture: `results/2026-07-28-xiao-nrf52840-gpt.txt`.
 

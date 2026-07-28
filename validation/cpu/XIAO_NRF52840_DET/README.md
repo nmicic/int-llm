@@ -1,6 +1,6 @@
 # HW test: Seeed XIAO nRF52840 — fp_math.h determinism gate on Cortex-M4F
 
-Status: **PASS** (2026-07-28, tree `8b16a00bb912-dirty`*)
+Status: **PASS** (2026-07-28, tree `1b706ecf6c7f`)
 
 First Nordic silicon and first Cortex-M4F target in this repo — an
 FPU-capable core running the FPU-less code: bit-equality with the golden
@@ -14,10 +14,6 @@ committed golden `tests/determinism_golden.txt`.
 | host reference (arm64 macOS, `__int128` backend) + committed golden | `c0d933ea340452ec` | — |
 | XIAO RP2040 (Cortex-M0+ @ 133 MHz) | `c0d933ea340452ec` | 10851 ms |
 | **XIAO nRF52840 (Cortex-M4F @ 64 MHz)** | **`c0d933ea340452ec`** | 13883 ms |
-
-\* dirty = the fp_math.h dual-backend vendoring + `FP_DET_NO_MAIN` split
-were not yet committed when the test ran; the result file's firmware
-SHA-256 pins the exact image.
 
 Raw capture: `results/2026-07-28-xiao-nrf52840-det.txt`.
 

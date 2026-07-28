@@ -1,13 +1,18 @@
-# run 2026-07-27T23:18:53Z
+# run 2026-07-28T18:23:55Z
 # target-folder HELTEC_V3_DET env heltec_v3_det
-# firmware sha256 2e9e636d2e4a06a67c867c8099dabe5a836f6e8e683242e45dab30a448a97586
+# firmware sha256 21949c08059a863ff38d7989603f1a1e25bcfc17b213d6e68f2985c1316a6bee
 # platform https://github.com/pioarduino/platform-espressif32/releases/download/54.03.21-2/platform-espressif32.zip
+# source sha256 99d4fb0c16c56fdbaf8ccb5827d2b51767e8db5baa85aa96bf4d214df541bc5c  src/fp_determinism.c
+# source sha256 ca8131491e2e2f457799dabe2db0d11eef930fb089399ea2d7ea3dfe2e45ea05  src/main.cpp
+# source sha256 f9d7c329c325ca426f0786ae651d45e9d907971a66d41d11cc8dac264591444f  include/build_info.h
+# source sha256 ee4a9ec5044790508ae0da0e863fe89e320712aa127ed6af5bd4e57df8aea4d1  include/det_pin.h
+# source sha256 38520b39b86f5fe90f7d92cd3a3026877e16370f15a85c9b5f22079e291abf6c  include/fp_math.h
 # PlatformIO Core             6.1.19
 # Python                      3.14.6-final.0
 # PlatformIO Core Directory   $HOME/.platformio
 # PlatformIO Core Executable  /opt/homebrew/bin/platformio
 # Python Executable           /opt/homebrew/Cellar/platformio/6.1.19_1/libexec/bin/python
-port: <REDACTED>
-target heltec-s3-det arch xtensa tree 8b16a00bb912-dirty PROFILE det hash c0d933ea340452ec (3883 ms, informational)
+port: usbserial-<REDACTED>
+target heltec-s3-det arch xtensa tree 1b706ecf6c7f PROFILE det hash c0d933ea340452ec (3883 ms, informational)
 profile: PASS (target reproduces the host determinism hash)
-capture: OK target=heltec-s3-det arch=xtensa tree=8b16a00bb912-dirty profile=det hash=c0d933ea340452ec
+capture: OK target=heltec-s3-det arch=xtensa tree=1b706ecf6c7f profile=det hash=c0d933ea340452ec
