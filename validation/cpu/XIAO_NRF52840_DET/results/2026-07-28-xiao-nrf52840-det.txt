@@ -1,0 +1,13 @@
+# run 2026-07-27T23:29:13Z
+# target-folder XIAO_NRF52840_DET env xiao_nrf52840_det
+# firmware sha256 a0f8c004a21552e056d101a40ae3152d3d01f11a2b8b7f924099d93bcf5e9845
+# platform https://github.com/maxgerhardt/platform-nordicnrf52.git#cac6fcf943a41accd2aeb4f3659ae297a73f422e
+# PlatformIO Core             6.1.19
+# Python                      3.14.6-final.0
+# PlatformIO Core Directory   $HOME/.platformio
+# PlatformIO Core Executable  /opt/homebrew/bin/platformio
+# Python Executable           /opt/homebrew/Cellar/platformio/6.1.19_1/libexec/bin/python
+port: <REDACTED>
+target xiao-nrf52840-det arch arm tree 8b16a00bb912-dirty PROFILE det hash c0d933ea340452ec (13883 ms, informational)
+profile: PASS (target reproduces the host determinism hash)
+capture: OK target=xiao-nrf52840-det arch=arm tree=8b16a00bb912-dirty profile=det hash=c0d933ea340452ec

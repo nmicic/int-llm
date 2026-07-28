@@ -1,0 +1,13 @@
+# run 2026-07-27T23:22:19Z
+# target-folder TBEAM_LX6_DET env tbeam_lx6_det
+# firmware sha256 16cbede71f6a988f469f0eb342b248d141042e9c2714f737a7278c80ee8a3d98
+# platform https://github.com/pioarduino/platform-espressif32/releases/download/54.03.21-2/platform-espressif32.zip
+# PlatformIO Core             6.1.19
+# Python                      3.14.6-final.0
+# PlatformIO Core Directory   $HOME/.platformio
+# PlatformIO Core Executable  /opt/homebrew/bin/platformio
+# Python Executable           /opt/homebrew/Cellar/platformio/6.1.19_1/libexec/bin/python
+port: <REDACTED>
+target tbeam-lx6-det arch xtensa tree 8b16a00bb912-dirty PROFILE det hash c0d933ea340452ec (4237 ms, informational)
+profile: PASS (target reproduces the host determinism hash)
+capture: OK target=tbeam-lx6-det arch=xtensa tree=8b16a00bb912-dirty profile=det hash=c0d933ea340452ec

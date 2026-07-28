@@ -1,0 +1,57 @@
+# Operator-run full training on the Pi 1 B+ — concise excerpt of the
+# timestamped log (full log: 5031 lines / 210,953 bytes, retained on the
+# device; steps 5..4997 elided here). Run 2026-07-28, local time stamps.
+# remote: Linux 6.18.34+rpt-rpi-v6 #1 Raspbian 1:6.18.34-1+rpt1 (2026-06-09) armv6l
+# remote gcc: gcc (Raspbian 14.2.0-19+rpi1) 14.2.0, -O2 -fwrapv -std=c11
+# sources sha256 (as built on the device for this run):
+#   22fce0adcf4768ecb112d5895c76eeb5f12ce1db510effe7d83bac61f9e370a6  microgpt_int.c
+#   38520b39b86f5fe90f7d92cd3a3026877e16370f15a85c9b5f22079e291abf6c  fp_math.h  (= committed)
+# note: this microgpt_int.c is the revision immediately preceding the
+# committed one — the sole difference is inference_forward's work arrays
+# moved to static storage (a stack-size fix, no arithmetic change; host
+# output verified byte-identical across the two revisions, and the
+# 2026-07-28-pi1-bplus.txt transcript reruns training on this board with
+# the committed revision, same result).
+# model sha256:
+#   466cfe9dba7b888cdaa23dedf4b10351826795793448c8e95dcb0f7a61ed33eb  model.mgw     (committed, Mac-trained)
+#   466cfe9dba7b888cdaa23dedf4b10351826795793448c8e95dcb0f7a61ed33eb  model_pi.mgw  (this run)
+# cmp model_pi.mgw model.mgw -> identical (exit 0)
+=== train_ts start 2026-07-28 02:06:09 ===
+[02:06:11] === MicroGPT Integer-Only (Q16.48 Fixed-Point) ===
+[02:06:11] Pi = 3.141592653589782
+[02:06:11] num docs: 32033
+[02:06:11] vocab size: 27
+[02:06:11] num params: 14272
+[02:06:11] step    1 / 5000 | loss 3.2586
+[02:06:11] step    2 / 5000 | loss 3.1712
+[02:06:11] step    3 / 5000 | loss 3.0899
+[02:06:11] step    4 / 5000 | loss 2.8202
+[... steps 5 .. 4997 elided — ~0.26 s/step, no gaps, monotone timestamps ...]
+[02:27:45] step 4998 / 5000 | loss 2.0986
+[02:27:45] step 4999 / 5000 | loss 2.1709
+[02:27:45] step 5000 / 5000 | loss 2.5497
+[02:27:45] saved model_pi.mgw
+[02:27:45]
+[02:27:46] --- inference ---
+[02:27:46] sample  1: kayla
+[02:27:46] sample  2: daia
+[02:27:46] sample  3: lee
+[02:27:46] sample  4: kayan
+[02:27:46] sample  5: maha
+[02:27:46] sample  6: kaia
+[02:27:46] sample  7: ramiar
+[02:27:46] sample  8: anall
+[02:27:46] sample  9: ainale
+[02:27:46] sample 10: kelel
+[02:27:46] sample 11: malana
+[02:27:46] sample 12: arile
+[02:27:46] sample 13: marion
+[02:27:46] sample 14: avile
+[02:27:46] sample 15: calan
+[02:27:46] sample 16: kaylia
+[02:27:46] sample 17: diaria
+[02:27:46] sample 18: sarona
+[02:27:46] sample 19: jahel
+[02:27:46] sample 20: karin
+=== done 2026-07-28 02:27:46 rc=0 ===
+model_pi.mgw is BYTE-IDENTICAL to the Mac-trained model.mgw

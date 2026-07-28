@@ -16,7 +16,13 @@
 #   make clean      — remove binaries
 #
 # Requirements:
-#   - gcc or clang with __int128 support (64-bit platform)
+#   - C99/C11 compiler with 64-bit integers — NOT necessarily a 64-bit platform.
+#     fp_math.h uses native __int128 where the compiler has it (gcc/clang on
+#     64-bit hosts) and a bit-identical two-limb software backend everywhere
+#     else (Cortex-M, RV32, any 32-bit target). `make determinism-portable`
+#     proves both backends hash identically. (`llama_int.c` and the legacy
+#     `fp_test.c` self-test still use raw __int128 directly and need a
+#     compiler that provides it.)
 #   - run `make input` for the tiny GPT demo dataset
 #   - No external dependencies (integer variants need NO math library)
 #
@@ -26,7 +32,11 @@ CC      = gcc
 # -fwrapv defines signed overflow as two's-complement wraparound. REQUIRED for
 # reproducible integer code: without it, signed overflow is UB and optimizer choices
 # can differ across arch/compiler. `make determinism` guards the resulting bitstream.
-CFLAGS  = -O3 -march=native -fwrapv -Wall -Wextra -Wno-unused-function -std=c11 -I.
+# FP_MATH_WITH_STDIO enables fp_print (the header keeps stdio out of embedded
+# builds by default); FP_MATH_INT128_ALIASES restores the legacy int128_t /
+# uint128_t typedef spellings that fp_test.c and llama_int.c use.
+CFLAGS  = -O3 -march=native -fwrapv -Wall -Wextra -Wno-unused-function -std=c11 -I. \
+          -DFP_MATH_WITH_STDIO -DFP_MATH_INT128_ALIASES
 LDFLAGS =
 
 # Float variant needs libm
@@ -51,12 +61,19 @@ BIN_INT    = gpt_int
 BIN_TEST   = fp_test
 BIN_DET    = fp_determinism
 BIN_LLAMA  = llama_int
+# Portable-backend builds: same sources, -DFP_MATH_FORCE_PORTABLE swaps the
+# native __int128 backend for the two-limb software backend a 32-bit target
+# would use. Running these on the 64-bit host is the differential gate.
+BIN_DET_P  = fp_determinism_portable
+BIN_INT_P  = gpt_int_portable
+# Inference-only (-DMGPT_NO_TRAIN): loads a .mgw written by `gpt_int --save`
+BIN_INT_I  = gpt_int_infer
 
 # ==============================================================================
 # Build targets
 # ==============================================================================
 
-.PHONY: all input clean test bench run-float run-int benchmark-all help llama regression determinism
+.PHONY: all input clean test bench run-float run-int benchmark-all help llama regression determinism determinism-portable
 
 all: $(BIN_FLOAT) $(BIN_INT) $(BIN_TEST) $(BIN_DET) $(BIN_LLAMA)
 	@echo ""
@@ -89,6 +106,21 @@ $(BIN_LLAMA): $(SRC_LLAMA) $(HEADERS)
 # Determinism gate driver — pure integer, NO -lm
 $(BIN_DET): $(SRC_DET) fp_math.h
 	$(CC) $(CFLAGS) -o $@ $<
+
+# Same driver, forced onto the two-limb portable backend (what a 32-bit
+# target compiles). Must reproduce the identical golden hash.
+$(BIN_DET_P): $(SRC_DET) fp_math.h
+	$(CC) $(CFLAGS) -DFP_MATH_FORCE_PORTABLE -o $@ $<
+
+# Integer GPT on the portable backend — differential build for 32-bit parity.
+$(BIN_INT_P): $(SRC_INT) $(HEADERS)
+	$(CC) $(CFLAGS) -DFP_MATH_FORCE_PORTABLE -o $@ $<
+
+# Inference-only GPT: no dataset array (~43 MB), no gradients, no Adam —
+# weights come from a .mgw file written by `./gpt_int --save`. This is the
+# configuration for small 32-bit targets: train on a big host, load there.
+$(BIN_INT_I): $(SRC_INT) $(HEADERS)
+	$(CC) $(CFLAGS) -DMGPT_NO_TRAIN -o $@ $<
 
 # ==============================================================================
 # Test & benchmark targets
@@ -151,10 +183,17 @@ determinism: $(BIN_DET) $(DET_GOLDEN)
 	@echo "=== Determinism Gate: fp_math.h bit-exact hash vs golden ==="
 	@./$(BIN_DET) $(DET_GOLDEN)
 
+# Backend-differential gate: the two-limb software backend (the code path a
+# 32-bit target runs) must hash bit-identically to the same golden.
+determinism-portable: $(BIN_DET_P) $(DET_GOLDEN)
+	@echo ""
+	@echo "=== Determinism Gate (portable two-limb backend) vs golden ==="
+	@./$(BIN_DET_P) $(DET_GOLDEN)
+
 # Regression gate — hard stop on any invariant or threshold violation.
 # Use as CI gate or pre-commit check.
 # Exit non-zero on failure.
-regression: $(BIN_TEST) $(BIN_DET) $(DET_GOLDEN)
+regression: $(BIN_TEST) $(BIN_DET) $(BIN_DET_P) $(DET_GOLDEN)
 	@echo ""
 	@echo "=== Regression Gate: Unit Tests ==="
 	@./$(BIN_TEST)
@@ -162,10 +201,14 @@ regression: $(BIN_TEST) $(BIN_DET) $(DET_GOLDEN)
 	@echo "=== Regression Gate: Cross-machine Determinism Hash ==="
 	@./$(BIN_DET) $(DET_GOLDEN)
 	@echo ""
+	@echo "=== Regression Gate: Portable-backend Determinism Hash ==="
+	@./$(BIN_DET_P) $(DET_GOLDEN)
+	@echo ""
 	@echo "=== ALL REGRESSION GATES PASSED ==="
 
 clean:
 	rm -f $(BIN_FLOAT) $(BIN_INT) $(BIN_TEST) $(BIN_DET) $(BIN_LLAMA)
+	rm -f $(BIN_DET_P) $(BIN_INT_P) $(BIN_INT_I)
 	rm -f gpt gpt_int_instr gpt_int_prof
 
 help:
@@ -182,6 +225,8 @@ help:
 	@echo "  make run-float     Train + infer float baseline"
 	@echo "  make run-int       Train + infer integer variant"
 	@echo "  make determinism   Run cross-machine bit-exact determinism gate (vs golden hash)"
+	@echo "  make determinism-portable  Run the same gate on the portable backend"
+	@echo "  make gpt_int_infer Build the inference-only .mgw loader"
 	@echo "  make regression    Run full regression gate (unit tests + determinism)"
 	@echo "  make clean         Remove all binaries"
 	@echo "  make help          Show this help"

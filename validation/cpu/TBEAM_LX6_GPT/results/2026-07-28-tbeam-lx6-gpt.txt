@@ -1,0 +1,27 @@
+# run 2026-07-27T23:22:48Z
+# target-folder TBEAM_LX6_GPT env tbeam_lx6_gpt
+# firmware sha256 3ec39e1b0dc1a053004b69c872a1d331dc2541232985b1a6cff6ec3559a81059
+# platform https://github.com/pioarduino/platform-espressif32/releases/download/54.03.21-2/platform-espressif32.zip
+# PlatformIO Core             6.1.19
+# Python                      3.14.6-final.0
+# PlatformIO Core Directory   $HOME/.platformio
+# PlatformIO Core Executable  /opt/homebrew/bin/platformio
+# Python Executable           /opt/homebrew/Cellar/platformio/6.1.19_1/libexec/bin/python
+port: <REDACTED>
+sample  7: ramiar
+sample  8: anall
+sample  9: ainale
+sample 10: kelel
+sample 11: malana
+sample 12: arile
+sample 13: marion
+sample 14: avile
+sample 15: calan
+sample 16: kaylia
+sample 17: diaria
+sample 18: sarona
+sample 19: jahel
+sample 20: karin
+target tbeam-lx6-gpt arch xtensa tree 8b16a00bb912-dirty PROFILE microgpt hash ff4bc4bf7d4fd99d (2585 ms, informational)
+profile: PASS (target reproduces the host sample stream)
+capture: OK target=tbeam-lx6-gpt arch=xtensa tree=8b16a00bb912-dirty profile=microgpt hash=ff4bc4bf7d4fd99d

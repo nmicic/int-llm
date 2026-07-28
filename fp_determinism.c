@@ -21,9 +21,15 @@
  * printf / file IO is display + the gate's own check — not part of the hashed math.
  */
 
+/* FP_DET_NO_MAIN: build only the hash computation (fp_det_compute) with no
+ * stdio main — for embedded harnesses (reviews/HW_tests) that run the gate
+ * on-target and print the result over their own serial channel. */
 #include <stdint.h>
+#include <stddef.h>
+#ifndef FP_DET_NO_MAIN
 #include <stdio.h>
 #include <string.h>
+#endif
 #include "fp_math.h"
 
 /* ---- FNV-1a 64-bit over raw little-endian int64 bytes ---- */
@@ -121,7 +127,13 @@ static fixed_t exp_arg(fixed_t x) {
     return m - ((fixed_t)20 << FP_PRECISION);
 }
 
-int main(int argc, char **argv) {
+/* Whole gate as a callable: init the library, build the grid, evaluate and
+ * hash every function. Fills subs_out[FP_DET_NUM_SUBS] (order matches the
+ * sub:* print order below) and returns the combined hash. Non-static so an
+ * embedded harness can run the identical computation without main(). */
+#define FP_DET_NUM_SUBS 12
+
+uint64_t fp_det_compute(uint64_t subs_out[FP_DET_NUM_SUBS]) {
     fp_math_init();                              /* required before CORDIC sincos */
     build_grid();
 
@@ -166,24 +178,34 @@ int main(int argc, char **argv) {
 
     /* combined hash = FNV over the ordered list of sub-hashes */
     uint64_t combined = fnv_init();
-    uint64_t subs[] = { h_mul, h_div, h_sqrt, h_sqrtf, h_isqrt, h_exp,
-                        h_log, h_cos, h_sin, h_sig, h_silu, h_rng };
-    for (size_t i = 0; i < sizeof(subs) / sizeof(subs[0]); i++)
+    uint64_t subs[FP_DET_NUM_SUBS] = { h_mul, h_div, h_sqrt, h_sqrtf, h_isqrt,
+                                       h_exp, h_log, h_cos, h_sin, h_sig,
+                                       h_silu, h_rng };
+    for (size_t i = 0; i < sizeof(subs) / sizeof(subs[0]); i++) {
         combined = fnv_mix_i64(combined, (int64_t)subs[i]);
+        if (subs_out) subs_out[i] = subs[i];
+    }
+    return combined;
+}
+
+#ifndef FP_DET_NO_MAIN
+int main(int argc, char **argv) {
+    uint64_t subs[FP_DET_NUM_SUBS];
+    uint64_t combined = fp_det_compute(subs);
 
     printf("grid_inputs=%d\n", grid_n);
-    printf("sub:fp_mul=%016llx\n",      (unsigned long long)h_mul);
-    printf("sub:fp_div=%016llx\n",      (unsigned long long)h_div);
-    printf("sub:fp_sqrt=%016llx\n",     (unsigned long long)h_sqrt);
-    printf("sub:fp_sqrt_fast=%016llx\n",(unsigned long long)h_sqrtf);
-    printf("sub:fp_inv_sqrt=%016llx\n", (unsigned long long)h_isqrt);
-    printf("sub:fp_exp=%016llx\n",      (unsigned long long)h_exp);
-    printf("sub:fp_log=%016llx\n",      (unsigned long long)h_log);
-    printf("sub:fp_sincos_cos=%016llx\n",(unsigned long long)h_cos);
-    printf("sub:fp_sincos_sin=%016llx\n",(unsigned long long)h_sin);
-    printf("sub:fp_sigmoid=%016llx\n",  (unsigned long long)h_sig);
-    printf("sub:fp_silu=%016llx\n",     (unsigned long long)h_silu);
-    printf("sub:fp_rng=%016llx\n",      (unsigned long long)h_rng);
+    printf("sub:fp_mul=%016llx\n",      (unsigned long long)subs[0]);
+    printf("sub:fp_div=%016llx\n",      (unsigned long long)subs[1]);
+    printf("sub:fp_sqrt=%016llx\n",     (unsigned long long)subs[2]);
+    printf("sub:fp_sqrt_fast=%016llx\n",(unsigned long long)subs[3]);
+    printf("sub:fp_inv_sqrt=%016llx\n", (unsigned long long)subs[4]);
+    printf("sub:fp_exp=%016llx\n",      (unsigned long long)subs[5]);
+    printf("sub:fp_log=%016llx\n",      (unsigned long long)subs[6]);
+    printf("sub:fp_sincos_cos=%016llx\n",(unsigned long long)subs[7]);
+    printf("sub:fp_sincos_sin=%016llx\n",(unsigned long long)subs[8]);
+    printf("sub:fp_sigmoid=%016llx\n",  (unsigned long long)subs[9]);
+    printf("sub:fp_silu=%016llx\n",     (unsigned long long)subs[10]);
+    printf("sub:fp_rng=%016llx\n",      (unsigned long long)subs[11]);
     printf("DETERMINISM_HASH=%016llx\n",(unsigned long long)combined);
 
     /* optional golden comparison: argv[1] = path to file holding the expected hash */
@@ -205,3 +227,4 @@ int main(int argc, char **argv) {
     }
     return 0;
 }
+#endif /* !FP_DET_NO_MAIN */

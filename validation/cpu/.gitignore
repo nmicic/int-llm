@@ -1,0 +1,15 @@
+# Harnesses carry NO copies of the library sources: prepare.sh copies them
+# from the repo root at build time (and bakes model.mgw into a header).
+# Committed content is only the harness glue (platformio.ini, prepare.sh,
+# src/main.cpp, hostref/host_main.c), READMEs, and results.
+*/harness/src/microgpt_int.c
+*/harness/src/fp_determinism.c
+*/harness/include/fp_math.h
+# generated at prepare time
+*/harness/include/build_info.h
+*/harness/include/det_pin.h
+*/harness/include/gpt_pin.h
+*/harness/include/model_mgw.h
+# build + host-reference artifacts
+*/harness/.pio/
+*/harness/.hostref/

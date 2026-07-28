@@ -1,0 +1,14 @@
+# run 2026-07-27T23:19:30Z
+# target-folder HELTEC_V3_GPT env heltec_v3_gpt
+# firmware sha256 e00db97a7b243ea9540f3056a2792b9dc530bc703df3a9a105b35b33bbdb7e24
+# platform https://github.com/pioarduino/platform-espressif32/releases/download/54.03.21-2/platform-espressif32.zip
+# PlatformIO Core             6.1.19
+# Python                      3.14.6-final.0
+# PlatformIO Core Directory   $HOME/.platformio
+# PlatformIO Core Executable  /opt/homebrew/bin/platformio
+# Python Executable           /opt/homebrew/Cellar/platformio/6.1.19_1/libexec/bin/python
+port: <REDACTED>
+sample 20: karin
+target heltec-s3-gpt arch xtensa tree 8b16a00bb912-dirty PROFILE microgpt hash ff4bc4bf7d4fd99d (1064 ms, informational)
+profile: PASS (target reproduces the host sample stream)
+capture: OK target=heltec-s3-gpt arch=xtensa tree=8b16a00bb912-dirty profile=microgpt hash=ff4bc4bf7d4fd99d

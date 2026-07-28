@@ -11,8 +11,11 @@ __pycache__/
 # Makefile binaries
 gpt_float
 gpt_int
+gpt_int_portable
+gpt_int_infer
 fp_test
 fp_determinism
+fp_determinism_portable
 llama_int
 microgpt
 microgpt_int
@@ -48,3 +51,7 @@ models/
 # Generated native weight files
 *.mgw
 *.mgwc
+
+# ... except the committed pretrained tiny-GPT weights used by the
+# hardware validation harnesses (validation/cpu/) and `./gpt_int --load`
+!/model.mgw

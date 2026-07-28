@@ -37,6 +37,12 @@
 #define MAX_DOC_LEN 512
 #define MAX_CHARS 128
 
+/* MGPT_NO_TRAIN builds an inference-only binary: the dataset array (the
+ * single biggest RAM item, ~43 MB), tokenizer builder, gradients, Adam
+ * state, and the whole-sequence training forward/backward are compiled
+ * out. Weights, vocab, and PRNG state then come from --load <file.mgw>.
+ * This is the configuration meant for small 32-bit targets. */
+#ifndef MGPT_NO_TRAIN
 static char docs[MAX_DOCS][MAX_DOC_LEN];
 static int num_docs = 0;
 
@@ -59,6 +65,7 @@ static void load_dataset(const char *filename) {
     }
     fclose(f);
 }
+#endif /* !MGPT_NO_TRAIN */
 
 /* ------------------------------------------------------------------ */
 /*  Tokenizer (unchanged — already pure integer)                       */
@@ -66,6 +73,7 @@ static void load_dataset(const char *filename) {
 static char uchars_arr[MAX_CHARS];
 static int vocab_size, BOS, num_uchars = 0;
 
+#ifndef MGPT_NO_TRAIN
 static int char_to_id(char c) {
     for (int i = 0; i < num_uchars; i++)
         if (uchars_arr[i] == c) return i;
@@ -87,6 +95,7 @@ static void build_tokenizer(void) {
     BOS = num_uchars;
     vocab_size = num_uchars + 1;
 }
+#endif /* !MGPT_NO_TRAIN */
 
 /* ------------------------------------------------------------------ */
 /*  Model hyper-parameters                                             */
@@ -126,6 +135,7 @@ static fixed_t *adam_m_fc2[N_LAYER], *adam_v_fc2[N_LAYER];
 static int num_params = 0;
 static fixed_t ATTN_SCALE; /* cached 1/sqrt(HEAD_DIM) */
 
+#ifndef MGPT_NO_TRAIN
 static fixed_t *make_param(int size, fixed_t std) {
     fixed_t *p = (fixed_t *)calloc(size, sizeof(fixed_t));
     for (int i = 0; i < size; i++)
@@ -168,6 +178,7 @@ static void init_params(void) {
     printf("num params: %d\n", num_params);
     ATTN_SCALE = fp_inv_sqrt(fp_from_int(HEAD_DIM));
 }
+#endif /* !MGPT_NO_TRAIN */
 
 /* ------------------------------------------------------------------ */
 /*  Forward-pass activation storage (whole-sequence, flat 2D arrays)   */
@@ -175,6 +186,7 @@ static void init_params(void) {
 /*  layer iteration. Safe for N_LAYER==1; for multi-layer, each array  */
 /*  below (and the backward accumulators) would need a layer index.    */
 /* ------------------------------------------------------------------ */
+#ifndef MGPT_NO_TRAIN
 static fixed_t fwd_emb[BLOCK_SIZE][N_EMBD];
 static fixed_t fwd_rms_init[BLOCK_SIZE];
 static fixed_t fwd_rms_ms_init[BLOCK_SIZE];    /* int-specific: ms_eps for rmsnorm_bwd */
@@ -201,6 +213,7 @@ static fixed_t bwd_dk[BLOCK_SIZE][N_EMBD];
 static fixed_t bwd_dv[BLOCK_SIZE][N_EMBD];
 static fixed_t bwd_dq[BLOCK_SIZE][N_EMBD];
 static fixed_t bwd_d_res[BLOCK_SIZE][N_EMBD];
+#endif /* !MGPT_NO_TRAIN */
 
 /* ------------------------------------------------------------------ */
 /*  Forward building blocks (integer-only)                             */
@@ -253,6 +266,7 @@ static inline void softmax_fwd(const fixed_t *logits, int n, fixed_t *probs) {
 /* ------------------------------------------------------------------ */
 /*  Backward building blocks (integer-only)                            */
 /* ------------------------------------------------------------------ */
+#ifndef MGPT_NO_TRAIN
 
 static inline void linear_bwd_x(const fixed_t *restrict w,
                                  const fixed_t *restrict dout,
@@ -552,6 +566,7 @@ static void adam_update(fixed_t *p, fixed_t *g, fixed_t *m, fixed_t *v,
         g[i] = 0;
     }
 }
+#endif /* !MGPT_NO_TRAIN */
 
 /* ------------------------------------------------------------------ */
 /*  Weighted random choice (integer-only)                              */
@@ -576,20 +591,26 @@ static fixed_t inf_keys[N_LAYER][BLOCK_SIZE][N_EMBD];
 static fixed_t inf_vals[N_LAYER][BLOCK_SIZE][N_EMBD];
 
 static void inference_forward(int token_id, int pos, fixed_t *logits_out) {
-    fixed_t x[N_EMBD], tmp[MLP_DIM > N_EMBD ? MLP_DIM : N_EMBD];
+    /* static, not stack: together these work arrays are ~4 KB, which
+       overflows small embedded loop stacks (the Adafruit nRF52 core gives
+       loop() a fixed 4 KB FreeRTOS task stack). Every array is fully
+       written before it is read on each call, and nothing here is
+       reentrant, so statics do not change behavior. */
+    static fixed_t x[N_EMBD], tmp[MLP_DIM > N_EMBD ? MLP_DIM : N_EMBD];
+    static fixed_t xr[N_EMBD], xn[N_EMBD];
+    static fixed_t q[N_EMBD], k[N_EMBD], v[N_EMBD];
+    static fixed_t ao[N_EMBD], al[BLOCK_SIZE];
+    static fixed_t xn_m[N_EMBD], h1[MLP_DIM];
 
     for (int i = 0; i < N_EMBD; i++)
         x[i] = wte[token_id * N_EMBD + i] + wpe[pos * N_EMBD + i];
     rmsnorm_fwd(x, N_EMBD, x, NULL);
 
     for (int li = 0; li < N_LAYER; li++) {
-        fixed_t xr[N_EMBD];
         memcpy(xr, x, sizeof(xr));
 
-        fixed_t xn[N_EMBD];
         rmsnorm_fwd(x, N_EMBD, xn, NULL);
 
-        fixed_t q[N_EMBD], k[N_EMBD], v[N_EMBD];
         linear_fwd(xn, attn_wq[li], N_EMBD, N_EMBD, q);
         linear_fwd(xn, attn_wk[li], N_EMBD, N_EMBD, k);
         linear_fwd(xn, attn_wv[li], N_EMBD, N_EMBD, v);
@@ -598,10 +619,8 @@ static void inference_forward(int token_id, int pos, fixed_t *logits_out) {
 
         int seq_len = pos + 1;
         fixed_t attn_scale = ATTN_SCALE;
-        fixed_t ao[N_EMBD];
         for (int h = 0; h < N_HEAD; h++) {
             int hs = h * HEAD_DIM;
-            fixed_t al[BLOCK_SIZE];
             for (int s = 0; s < seq_len; s++) {
                 fixed_t dot = 0;
                 for (int j = 0; j < HEAD_DIM; j++)
@@ -633,9 +652,7 @@ static void inference_forward(int token_id, int pos, fixed_t *logits_out) {
             x[i] = tmp[i] + xr[i];
 
         memcpy(xr, x, sizeof(xr));
-        fixed_t xn_m[N_EMBD];
         rmsnorm_fwd(x, N_EMBD, xn_m, NULL);
-        fixed_t h1[MLP_DIM];
         linear_fwd(xn_m, mlp_fc1[li], MLP_DIM, N_EMBD, h1);
         for (int i = 0; i < MLP_DIM; i++)
             h1[i] = h1[i] > 0 ? h1[i] : 0; /* ReLU (stable in fixed-point) */
@@ -647,16 +664,418 @@ static void inference_forward(int token_id, int pos, fixed_t *logits_out) {
     linear_fwd(x, lm_head, vocab_size, N_EMBD, logits_out);
 }
 
+/* One sampled name — exactly the per-sample loop main() runs, factored
+ * out so embedded harnesses (reviews/HW_tests) reproduce the host's
+ * sample stream byte-for-byte from the same PRNG state. Non-static on
+ * purpose; buffers are static (MCU stacks are small). Clears the KV
+ * cache before returning, ready for the next sample. */
+int mgpt_generate_sample(char out[BLOCK_SIZE + 1]) {
+    static fixed_t logits[MAX_CHARS + 1], probs[MAX_CHARS + 1];
+    fixed_t temperature = FP_ONE / 2; /* 0.5 */
+    int slen = 0, token_id = BOS;
+    for (int pos = 0; pos < BLOCK_SIZE; pos++) {
+        inference_forward(token_id, pos, logits);
+        fixed_t inv_t = fp_div(FP_ONE, temperature);
+        for (int i = 0; i < vocab_size; i++)
+            logits[i] = fp_mul(logits[i], inv_t);
+        softmax_fwd(logits, vocab_size, probs);
+        token_id = weighted_choice(probs, vocab_size);
+        if (token_id == BOS) break;
+        if (token_id < num_uchars)
+            out[slen++] = uchars_arr[token_id];
+    }
+    out[slen] = '\0';
+    memset(inf_keys, 0, sizeof(inf_keys));
+    memset(inf_vals, 0, sizeof(inf_vals));
+    return slen;
+}
+
+/* ================================================================== */
+/*  .mgw save/load — MicroGPT native weight container                  */
+/*                                                                     */
+/*  Same on-disk layout as llama_int.c's .mgw (64-byte header,         */
+/*  64-byte config block, 96-byte index entries, packed int64 data,    */
+/*  host-native endian with rejection tag). Two extra 1-D tensors      */
+/*  beyond the weights:                                                */
+/*    "tokenizer.uchars" — the character vocab, one int64 per char     */
+/*    "rng.state"        — xorshift64 state at save time, so a loaded  */
+/*                         model reproduces the training binary's      */
+/*                         sample stream bit-for-bit                   */
+/*  Train on a big host, --save, then --load on a small 32-bit target: */
+/*  no dataset, no gradients, no Adam state ever exist there.          */
+/* ================================================================== */
+
+#define MGW_MAGIC       "MGW\0"       /* 4 bytes */
+#define MGW_MAGIC_SIZE  4
+#define MGW_VERSION     1
+#define MGW_ENDIAN_TAG  0x01020304u   /* host-native endian check */
+
+#define MGW_HEADER_SIZE 64
+#define MGW_CONFIG_SIZE 64
+#define MGW_INDEX_ENTRY_SIZE 96
+
+typedef struct {
+    char     magic[4];        /*  0: "MGW\0"                 */
+    uint32_t version;         /*  4: format version (1)      */
+    uint32_t endian_tag;      /*  8: 0x01020304              */
+    uint32_t num_tensors;     /* 12: number of tensors       */
+    uint64_t index_offset;    /* 16: absolute offset of index */
+    uint64_t data_offset;     /* 24: absolute offset of data  */
+    uint8_t  reserved[32];    /* 32: zeros (forward compat)   */
+} mgw_header_t;
+
+typedef struct {
+    int32_t hidden_dim;       /*  0 */
+    int32_t num_heads;        /*  4 */
+    int32_t num_kv_heads;     /*  8 */
+    int32_t head_dim;         /* 12 */
+    int32_t num_layers;       /* 16 */
+    int32_t intermediate_dim; /* 20 */
+    int32_t vocab_size;       /* 24 */
+    int32_t max_seq_len;      /* 28 */
+    int32_t rope_theta;       /* 32: 0 — microgpt uses learned wpe */
+    int32_t lm_head_tied;     /* 36: 0 — lm_head is its own tensor */
+    int32_t reserved[6];      /* 40: zeros */
+} mgw_config_t;
+
+typedef struct {
+    char     name[64];        /*  0: null-terminated tensor name */
+    uint64_t num_elements;    /* 64: total element count         */
+    uint64_t data_offset;     /* 72: absolute file offset        */
+    uint32_t ndims;           /* 80: 1 or 2                     */
+    uint32_t shape[2];        /* 84: shape[1]=0 for 1D          */
+    uint32_t reserved;        /* 92: zero                        */
+} mgw_index_entry_t;
+
+_Static_assert(sizeof(mgw_header_t) == MGW_HEADER_SIZE, "mgw_header_t must be 64 bytes");
+_Static_assert(sizeof(mgw_config_t) == MGW_CONFIG_SIZE, "mgw_config_t must be 64 bytes");
+_Static_assert(sizeof(mgw_index_entry_t) == MGW_INDEX_ENTRY_SIZE, "mgw_index_entry_t must be 96 bytes");
+
+/* Weight tensor table: one row per parameter matrix, shared by save
+ * and load so names, shapes, and storage slots cannot drift apart. */
+typedef struct {
+    const char *name;
+    fixed_t   **slot;
+    int         rows, cols;
+} mgpt_tensor_t;
+
+#define MGPT_NUM_WEIGHTS (3 + 6 * N_LAYER)
+
+static int mgpt_tensor_table(mgpt_tensor_t *tab) {
+    static char lname[6 * N_LAYER][32];
+    int n = 0, ln = 0;
+    tab[n++] = (mgpt_tensor_t){ "wte",     &wte,     vocab_size, N_EMBD };
+    tab[n++] = (mgpt_tensor_t){ "wpe",     &wpe,     BLOCK_SIZE, N_EMBD };
+    tab[n++] = (mgpt_tensor_t){ "lm_head", &lm_head, vocab_size, N_EMBD };
+    for (int i = 0; i < N_LAYER; i++) {
+        const struct { const char *fmt; fixed_t **slot; int r, c; } per[6] = {
+            { "layers.%d.attn_wq", &attn_wq[i], N_EMBD,  N_EMBD  },
+            { "layers.%d.attn_wk", &attn_wk[i], N_EMBD,  N_EMBD  },
+            { "layers.%d.attn_wv", &attn_wv[i], N_EMBD,  N_EMBD  },
+            { "layers.%d.attn_wo", &attn_wo[i], N_EMBD,  N_EMBD  },
+            { "layers.%d.mlp_fc1", &mlp_fc1[i], MLP_DIM, N_EMBD  },
+            { "layers.%d.mlp_fc2", &mlp_fc2[i], N_EMBD,  MLP_DIM },
+        };
+        for (int j = 0; j < 6; j++, ln++) {
+            snprintf(lname[ln], sizeof(lname[ln]), per[j].fmt, i);
+            tab[n++] = (mgpt_tensor_t){ lname[ln], per[j].slot,
+                                        per[j].r, per[j].c };
+        }
+    }
+    return n;
+}
+
+static int save_model_mgw(const char *path) {
+    mgpt_tensor_t tab[MGPT_NUM_WEIGHTS];
+    int nw = mgpt_tensor_table(tab);
+    uint32_t num_tensors = (uint32_t)nw + 2;   /* + tokenizer + rng */
+
+    FILE *f = fopen(path, "wb");
+    if (!f) { fprintf(stderr, "cannot write %s\n", path); return -1; }
+
+    uint64_t index_off = MGW_HEADER_SIZE + MGW_CONFIG_SIZE;
+    uint64_t data_off  = index_off +
+                         (uint64_t)num_tensors * MGW_INDEX_ENTRY_SIZE;
+
+    mgw_header_t hdr; memset(&hdr, 0, sizeof(hdr));
+    memcpy(hdr.magic, MGW_MAGIC, MGW_MAGIC_SIZE);
+    hdr.version      = MGW_VERSION;
+    hdr.endian_tag   = MGW_ENDIAN_TAG;
+    hdr.num_tensors  = num_tensors;
+    hdr.index_offset = index_off;
+    hdr.data_offset  = data_off;
+
+    mgw_config_t cfg; memset(&cfg, 0, sizeof(cfg));
+    cfg.hidden_dim       = N_EMBD;
+    cfg.num_heads        = N_HEAD;
+    cfg.num_kv_heads     = N_HEAD;
+    cfg.head_dim         = HEAD_DIM;
+    cfg.num_layers       = N_LAYER;
+    cfg.intermediate_dim = MLP_DIM;
+    cfg.vocab_size       = vocab_size;
+    cfg.max_seq_len      = BLOCK_SIZE;
+
+    if (fwrite(&hdr, sizeof(hdr), 1, f) != 1 ||
+        fwrite(&cfg, sizeof(cfg), 1, f) != 1) goto fail;
+
+    uint64_t off = data_off;
+    for (uint32_t t = 0; t < num_tensors; t++) {
+        mgw_index_entry_t e; memset(&e, 0, sizeof(e));
+        if (t < (uint32_t)nw) {
+            snprintf(e.name, sizeof(e.name), "%s", tab[t].name);
+            e.num_elements = (uint64_t)tab[t].rows * tab[t].cols;
+            e.ndims = 2;
+            e.shape[0] = (uint32_t)tab[t].rows;
+            e.shape[1] = (uint32_t)tab[t].cols;
+        } else if (t == (uint32_t)nw) {
+            snprintf(e.name, sizeof(e.name), "tokenizer.uchars");
+            e.num_elements = (uint64_t)num_uchars;
+            e.ndims = 1;
+            e.shape[0] = (uint32_t)num_uchars;
+        } else {
+            snprintf(e.name, sizeof(e.name), "rng.state");
+            e.num_elements = 1;
+            e.ndims = 1;
+            e.shape[0] = 1;
+        }
+        e.data_offset = off;
+        off += e.num_elements * sizeof(int64_t);
+        if (fwrite(&e, sizeof(e), 1, f) != 1) goto fail;
+    }
+
+    for (int t = 0; t < nw; t++) {
+        size_t ne = (size_t)tab[t].rows * tab[t].cols;
+        if (fwrite(*tab[t].slot, sizeof(fixed_t), ne, f) != ne) goto fail;
+    }
+    for (int i = 0; i < num_uchars; i++) {
+        int64_t v = (int64_t)(unsigned char)uchars_arr[i];
+        if (fwrite(&v, sizeof(v), 1, f) != 1) goto fail;
+    }
+    {
+        int64_t v = (int64_t)fp_rng_state;
+        if (fwrite(&v, sizeof(v), 1, f) != 1) goto fail;
+    }
+
+    fclose(f);
+    return 0;
+fail:
+    fprintf(stderr, "write error on %s\n", path);
+    fclose(f);
+    return -1;
+}
+
+static int load_model_mgw(const char *path) {
+    FILE *f = fopen(path, "rb");
+    if (!f) { fprintf(stderr, "cannot open %s\n", path); return -1; }
+
+    mgw_header_t hdr;
+    mgw_config_t cfg;
+    if (fread(&hdr, sizeof(hdr), 1, f) != 1 ||
+        memcmp(hdr.magic, MGW_MAGIC, MGW_MAGIC_SIZE) != 0 ||
+        hdr.version != MGW_VERSION ||
+        hdr.endian_tag != MGW_ENDIAN_TAG ||
+        fread(&cfg, sizeof(cfg), 1, f) != 1) {
+        fprintf(stderr, "%s: not a native-endian MGW v%d file\n",
+                path, MGW_VERSION);
+        fclose(f);
+        return -1;
+    }
+    if (cfg.hidden_dim != N_EMBD || cfg.num_heads != N_HEAD ||
+        cfg.head_dim != HEAD_DIM || cfg.num_layers != N_LAYER ||
+        cfg.intermediate_dim != MLP_DIM || cfg.max_seq_len != BLOCK_SIZE ||
+        cfg.vocab_size < 2 || cfg.vocab_size > MAX_CHARS + 1) {
+        fprintf(stderr,
+                "%s: config mismatch (file %dd/%dh/%dl/vocab %d vs compiled "
+                "%dd/%dh/%dl)\n", path, cfg.hidden_dim, cfg.num_heads,
+                cfg.num_layers, cfg.vocab_size, N_EMBD, N_HEAD, N_LAYER);
+        fclose(f);
+        return -1;
+    }
+
+    vocab_size = cfg.vocab_size;
+    BOS        = vocab_size - 1;
+    num_uchars = 0;                  /* set by tokenizer.uchars below */
+
+    mgpt_tensor_t tab[MGPT_NUM_WEIGHTS];
+    int nw = mgpt_tensor_table(tab);
+
+    num_params = 0;
+    for (int t = 0; t < nw; t++) {
+        size_t ne = (size_t)tab[t].rows * tab[t].cols;
+        *tab[t].slot = (fixed_t *)calloc(ne, sizeof(fixed_t));
+        if (!*tab[t].slot) {
+            fprintf(stderr, "out of memory loading %s\n", tab[t].name);
+            fclose(f);
+            return -1;
+        }
+        num_params += (int)ne;
+    }
+
+    int found = 0;
+    for (uint32_t i = 0; i < hdr.num_tensors; i++) {
+        mgw_index_entry_t e;
+        if (fseek(f, (long)(hdr.index_offset +
+                            (uint64_t)i * MGW_INDEX_ENTRY_SIZE),
+                  SEEK_SET) != 0 ||
+            fread(&e, sizeof(e), 1, f) != 1) goto fail;
+        e.name[sizeof(e.name) - 1] = 0;
+
+        if (strcmp(e.name, "tokenizer.uchars") == 0) {
+            if (e.num_elements != (uint64_t)(vocab_size - 1) ||
+                fseek(f, (long)e.data_offset, SEEK_SET) != 0) goto fail;
+            for (int j = 0; j < vocab_size - 1; j++) {
+                int64_t v;
+                if (fread(&v, sizeof(v), 1, f) != 1) goto fail;
+                uchars_arr[j] = (char)(unsigned char)v;
+            }
+            num_uchars = vocab_size - 1;
+        } else if (strcmp(e.name, "rng.state") == 0) {
+            int64_t v;
+            if (fseek(f, (long)e.data_offset, SEEK_SET) != 0 ||
+                fread(&v, sizeof(v), 1, f) != 1) goto fail;
+            fp_rng_state = (unsigned long long)v;
+        } else {
+            for (int t = 0; t < nw; t++) {
+                if (strcmp(e.name, tab[t].name) != 0) continue;
+                size_t ne = (size_t)tab[t].rows * tab[t].cols;
+                if (e.num_elements != (uint64_t)ne ||
+                    fseek(f, (long)e.data_offset, SEEK_SET) != 0 ||
+                    fread(*tab[t].slot, sizeof(fixed_t), ne, f) != ne)
+                    goto fail;
+                found++;
+                break;
+            }
+        }
+    }
+    if (found != nw || num_uchars == 0) {
+        fprintf(stderr, "%s: missing tensors (%d/%d weights, %d vocab)\n",
+                path, found, nw, num_uchars);
+        fclose(f);
+        return -1;
+    }
+    fclose(f);
+
+    ATTN_SCALE = fp_inv_sqrt(fp_from_int(HEAD_DIM));
+    return 0;
+fail:
+    fprintf(stderr, "read error on %s\n", path);
+    fclose(f);
+    return -1;
+}
+
+/* In-memory variant of load_model_mgw for targets with no filesystem:
+ * `buf` holds a complete .mgw image (e.g. a const array linked into MCU
+ * flash). Weight slots point straight INTO the buffer — zero copy, so on
+ * an RP2040 the weights are read through XIP flash and never occupy RAM.
+ * The buffer must stay alive and 8-byte aligned for the model's lifetime
+ * (every offset the writer emits is a multiple of 8, so alignment of the
+ * base carries to every tensor). Inference never writes weights, which is
+ * what makes the const cast sound. Non-static: embedded harness entry. */
+int mgpt_load_mem(const void *buf, size_t len) {
+    const unsigned char *p = (const unsigned char *)buf;
+    mgw_header_t hdr;
+    mgw_config_t cfg;
+    if (len < MGW_HEADER_SIZE + MGW_CONFIG_SIZE) return -1;
+    memcpy(&hdr, p, sizeof(hdr));
+    memcpy(&cfg, p + MGW_HEADER_SIZE, sizeof(cfg));
+    if (memcmp(hdr.magic, MGW_MAGIC, MGW_MAGIC_SIZE) != 0 ||
+        hdr.version != MGW_VERSION ||
+        hdr.endian_tag != MGW_ENDIAN_TAG) return -1;
+    if (cfg.hidden_dim != N_EMBD || cfg.num_heads != N_HEAD ||
+        cfg.head_dim != HEAD_DIM || cfg.num_layers != N_LAYER ||
+        cfg.intermediate_dim != MLP_DIM || cfg.max_seq_len != BLOCK_SIZE ||
+        cfg.vocab_size < 2 || cfg.vocab_size > MAX_CHARS + 1) return -1;
+    if (hdr.index_offset + (uint64_t)hdr.num_tensors * MGW_INDEX_ENTRY_SIZE
+        > (uint64_t)len) return -1;
+
+    vocab_size = cfg.vocab_size;
+    BOS        = vocab_size - 1;
+    num_uchars = 0;                  /* set by tokenizer.uchars below */
+
+    mgpt_tensor_t tab[MGPT_NUM_WEIGHTS];
+    int nw = mgpt_tensor_table(tab);
+
+    num_params = 0;
+    int found = 0;
+    for (uint32_t i = 0; i < hdr.num_tensors; i++) {
+        mgw_index_entry_t e;
+        memcpy(&e, p + hdr.index_offset + (uint64_t)i * MGW_INDEX_ENTRY_SIZE,
+               sizeof(e));
+        e.name[sizeof(e.name) - 1] = 0;
+        if (e.data_offset % sizeof(int64_t) != 0 ||
+            e.data_offset + e.num_elements * sizeof(int64_t) > (uint64_t)len)
+            return -1;
+        const int64_t *data = (const int64_t *)(const void *)(p + e.data_offset);
+
+        if (strcmp(e.name, "tokenizer.uchars") == 0) {
+            if (e.num_elements != (uint64_t)(vocab_size - 1)) return -1;
+            for (int j = 0; j < vocab_size - 1; j++)
+                uchars_arr[j] = (char)(unsigned char)data[j];
+            num_uchars = vocab_size - 1;
+        } else if (strcmp(e.name, "rng.state") == 0) {
+            fp_rng_state = (unsigned long long)data[0];
+        } else {
+            for (int t = 0; t < nw; t++) {
+                if (strcmp(e.name, tab[t].name) != 0) continue;
+                size_t ne = (size_t)tab[t].rows * tab[t].cols;
+                if (e.num_elements != (uint64_t)ne) return -1;
+                *tab[t].slot = (fixed_t *)(uintptr_t)data;
+                num_params += (int)ne;
+                found++;
+                break;
+            }
+        }
+    }
+    if (found != nw || num_uchars == 0) return -1;
+
+    ATTN_SCALE = fp_inv_sqrt(fp_from_int(HEAD_DIM));
+    return 0;
+}
+
 /* ------------------------------------------------------------------ */
 /*  Main: training + inference — ZERO floating-point!                  */
 /* ------------------------------------------------------------------ */
-int main(void) {
+/* MGPT_NO_MAIN: drop main() so a firmware wrapper (Arduino/PlatformIO
+ * harness) can provide its own entry point and drive the model through
+ * mgpt_load_mem() + mgpt_generate_sample(). */
+#ifndef MGPT_NO_MAIN
+int main(int argc, char **argv) {
+    const char *save_path = NULL, *load_path = NULL;
+    for (int i = 1; i < argc; i++) {
+        if (strcmp(argv[i], "--save") == 0 && i + 1 < argc)
+            save_path = argv[++i];
+        else if (strcmp(argv[i], "--load") == 0 && i + 1 < argc)
+            load_path = argv[++i];
+        else {
+            fprintf(stderr,
+                    "usage: %s [--save model.mgw] [--load model.mgw]\n"
+                    "  (no args: train from input.txt, then sample)\n",
+                    argv[0]);
+            return 1;
+        }
+    }
     /* Initialize integer math (pi, CORDIC tables) */
     fp_math_init();
 
     printf("=== MicroGPT Integer-Only (Q16.48 Fixed-Point) ===\n");
     printf("Pi = "); fp_print(FP_PI, 15); printf("\n");
 
+    if (load_path) {
+        if (load_model_mgw(load_path) != 0) return 1;
+        printf("loaded %s\n", load_path);
+        printf("vocab size: %d\n", vocab_size);
+        printf("num params: %d\n", num_params);
+        if (save_path) {
+            if (save_model_mgw(save_path) != 0) return 1;
+            printf("saved %s\n", save_path);
+        }
+    } else {
+#ifdef MGPT_NO_TRAIN
+    fprintf(stderr,
+            "inference-only build (MGPT_NO_TRAIN): --load <model.mgw> "
+            "is required\n");
+    return 1;
+#else
     load_dataset("input.txt");
 
     int *doc_order = (int *)malloc(num_docs * sizeof(int));
@@ -743,28 +1162,22 @@ int main(void) {
                step + 1, num_steps, fp_to_double(loss));
     }
 
+    /* Save BEFORE sampling: the file then carries the exact PRNG state
+     * the sampler below starts from, so `--load` anywhere reproduces
+     * the very same samples this run is about to print. */
+    if (save_path) {
+        if (save_model_mgw(save_path) != 0) return 1;
+        printf("saved %s\n", save_path);
+    }
+#endif /* !MGPT_NO_TRAIN */
+    }
+
     /* ---- Inference ---- */
-    fixed_t temperature = FP_ONE / 2; /* 0.5 */
     printf("\n--- inference ---\n");
     for (int si = 0; si < 20; si++) {
         char sample[BLOCK_SIZE + 1];
-        int slen = 0, token_id = BOS;
-        for (int pos = 0; pos < BLOCK_SIZE; pos++) {
-            fixed_t logits[MAX_CHARS + 1], probs[MAX_CHARS + 1];
-            inference_forward(token_id, pos, logits);
-            fixed_t inv_t = fp_div(FP_ONE, temperature);
-            for (int i = 0; i < vocab_size; i++)
-                logits[i] = fp_mul(logits[i], inv_t);
-            softmax_fwd(logits, vocab_size, probs);
-            token_id = weighted_choice(probs, vocab_size);
-            if (token_id == BOS) break;
-            if (token_id < num_uchars)
-                sample[slen++] = uchars_arr[token_id];
-        }
-        sample[slen] = '\0';
+        mgpt_generate_sample(sample);
         printf("sample %2d: %s\n", si + 1, sample);
-        memset(inf_keys, 0, sizeof(inf_keys));
-        memset(inf_vals, 0, sizeof(inf_vals));
     }
 
     /* cleanup */
@@ -787,3 +1200,4 @@ int main(void) {
     }
     return 0;
 }
+#endif /* !MGPT_NO_MAIN */

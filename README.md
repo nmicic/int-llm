@@ -4,15 +4,17 @@
 
 Copyright (c) 2026 Nenad Mićić — Apache-2.0
 
-**Bit-exact, deterministic LLM inference in pure-integer C.**
+**Bit-exact, deterministic LLM inference in pure-integer C — from x86 servers down to 32-bit microcontrollers.**
 
-int-llm runs a real Llama-family checkpoint (TinyLlama-1.1B) through a fixed-point integer compute core — no `float`, no `double`, no `libm` — and produces **identical raw bitstreams across platforms and compilers**. The determinism gate hashes the integer outputs and matches a committed golden hash on x86_64/gcc and arm64/clang. Run it today, run it next year on different hardware: same bits.
+int-llm runs a real Llama-family checkpoint (TinyLlama-1.1B) through a fixed-point integer compute core — no `float`, no `double`, no `libm` — and produces **bit-identical outputs across platforms and compilers**. The determinism gate hashes the integer outputs and matches a committed golden hash on x86_64/gcc, arm64/clang, and every recorded 32-bit target. Run it today, run it next year on different hardware: same bits.
 
 The integer path also matches the float reference **token-for-token** (80/80 on the greedy verification gate), and a tiny character-level GPT *trains and samples* entirely in integer arithmetic. You can even convert the whole model into an all-integer `.mgw` weight file and run inference straight from that — the original floating-point weights never reappear in the compute path.
 
 This is a feasibility demo, deliberately slow and simple. What it provides is something most LLM stacks don't: a **reproducible, exact reference** — an oracle — for anyone working on quantization, numerical drift, regression testing, or deterministic inference.
 
-- `gpt_int`: integer-only Q16.48 character GPT — trains **and** samples from a small downloaded names dataset
+`fp_math.h` no longer requires `__int128`: it now carries two interchangeable wide-math backends — native `__int128` where the compiler has it, and a portable two-limb software backend (C99 + 64-bit integers only) everywhere else — Cortex-M, RV32, Xtensa, ARMv6 — computing the **same bits**. This was matured in the [astro-nav-int](https://github.com/nmicic/astro-nav-int) sibling project and folded back here. `make determinism` and `make determinism-portable` both reproduce the committed golden hash, `gpt_int` training on a 2014 Raspberry Pi 1 B+ (32-bit ARMv6, no `__int128`) is byte-identical to the same run on a 64-bit host, and the train-big/run-small loop closes on microcontrollers: train on a laptop (`./gpt_int --save model.mgw`), run inference-only from the same weight file on a $5 RP2040 — byte-for-byte the same samples (see [`validation/cpu/`](validation/cpu/)). `llama_int` still uses raw `__int128` accumulators directly and remains 64-bit-only for now.
+
+- `gpt_int`: integer-only Q16.48 character GPT — trains **and** samples from a small downloaded names dataset; `--save`/`--load model.mgw` round-trips the trained weights as pure integers
 - `gpt_float`: float32 baseline (for comparison)
 - `llama_int`: integer-only Llama-family inference (TinyLlama-1.1B), CPU, dynamic `config.json`
 
@@ -39,7 +41,7 @@ If you only want the math, [`fp_math.h`](fp_math.h) is a self-contained, depende
 
 ## Quick Start
 
-Needs only a C compiler with `__int128` (gcc/clang, 64-bit). The integer paths have no dependencies — no math library.
+Needs only a C99/C11 compiler with 64-bit integers — `__int128` is used when available, otherwise the portable two-limb backend kicks in automatically. Two exceptions still use `__int128` directly and need a 64-bit host: `llama_int` and the `fp_test` self-test — so on a compiler without `__int128`, build targets individually (`make gpt_int fp_determinism`) rather than `make all`. The integer paths have no dependencies — no math library.
 
 ### 1. 30 seconds — train a tiny GPT in pure integer
 
@@ -64,7 +66,7 @@ make llama_int
 
 `--prompt` uses the C-native tokenizer when `models/tinyllama/tokenizer.json` is present (it is, in the HF download); otherwise it falls back to a Python bridge that needs `transformers`. CPU-only and slow — that's expected; this is a feasibility demo, not a fast runtime. (Default is layer-streaming, ~0.2 tok/s on a desktop CPU; add `--cache-layers` to hold all weights in RAM for a faster, higher-memory run.)
 
-The repo does not ship model weights; downloaded checkpoints remain under their upstream license.
+The repo does not ship TinyLlama or other downloaded checkpoint weights; those remain under their upstream licenses. The only committed weights are the 115,576-byte [`model.mgw`](model.mgw) tiny-GPT demo model, trained from the public names dataset.
 
 ### 3. (The fun part) Convert the whole model to integer weights, then run from those
 
@@ -93,16 +95,16 @@ python3 gen_ref.py            # writes models/tinyllama/reference_tokens.txt (ne
 
 ```bash
 make test            # fp_math.h unit tests
-make determinism     # cross-machine bit-exact hash — identical on x86_64/gcc and arm64/clang
+make determinism     # cross-machine bit-exact hash — identical across the recorded targets
 ```
 
-`make determinism` hashes the raw integer outputs of the core math over a fixed input grid and compares against a committed golden. Matching the golden is the project's reproducibility gate; it has been checked on x86_64/gcc and arm64/clang.
+`make determinism` hashes the raw integer outputs of the core math over a fixed input grid and compares against a committed golden. Matching the golden is the project's reproducibility gate; it has been checked on every platform recorded under [`validation/cpu/`](validation/cpu/), as well as arm64/clang.
 
 ---
 
 ## How it works
 
-Everything in the compute core is `int64_t` in **Q16.48** fixed point: 16 integer bits, 48 fractional bits, with `__int128` intermediates for full-precision multiply/divide. The integer compute core has no `float`, no `double`, and no `libm` dependency; floating point only appears at boundaries such as source-weight conversion, profiling/display, CLI argument conversion, and reference comparisons. Square root, exp, log, sin/cos, sigmoid and SiLU are all hand-rolled in `fp_math.h` (CORDIC, Newton, dyadic refinement).
+Everything in the compute core is `int64_t` in **Q16.48** fixed point: 16 integer bits and 48 fractional bits, with either native `__int128` or portable two-limb intermediates for full-precision multiply/divide. The integer compute core has no `float`, no `double`, and no `libm` dependency; floating point only appears at boundaries such as source-weight conversion, profiling/display, CLI argument conversion, and reference comparisons. Square root, exp, log, sin/cos, sigmoid and SiLU are all hand-rolled in `fp_math.h` (CORDIC, Newton, dyadic refinement).
 
 > **The hidden gem:** `fp_math.h` is a self-contained, dependency-free integer math library that stands on its own — it's the seed the whole project grew from. If you want to lift just the math, start with **[`FP_MATH.md`](FP_MATH.md)** (full API reference) and the [`viz/`](viz/) gallery that shows e, π, √2 and `e^(iπ)+1=0` being computed in pure integers.
 
@@ -129,7 +131,7 @@ Weights load from a standard Hugging Face directory (`config.json` + safetensors
 
 - A real Llama-family checkpoint (TinyLlama-1.1B-Chat) runs end-to-end through a pure-integer inference core, prompt text to decoded text.
 - The integer output matches the float reference **token-for-token** (80/80 across the benchmark prompts) under greedy decoding.
-- The core fixed-point math is **bit-exact on the tested platforms**: the `make determinism` hash is identical on x86_64/gcc and arm64/clang. This is the headline property — deterministic bits, demonstrated by a gate rather than asserted.
+- The core fixed-point math is **bit-exact on the tested platforms**: the `make determinism` hash is identical on x86_64/gcc (AMD and Intel), arm64/clang, 32-bit ARMv6 Linux, and six bare-metal microcontroller boards in seven ISA-mode configurations across three ISA families (ARM Cortex-M, RISC-V, Xtensa — the Pico 2 is tested in both its ARM and RISC-V modes) — see [`validation/cpu/`](validation/cpu/). This is the headline property — deterministic bits, demonstrated by a gate rather than asserted.
 - The tiny character GPT (`gpt_int`) both **trains and samples** entirely in integer arithmetic after downloading the small public names dataset.
 
 **Not proven (and not claimed):**
@@ -137,12 +139,50 @@ Weights load from a standard Hugging Face directory (`config.json` + safetensors
 - This is **slow on purpose** — a feasibility demo, not a fast runtime. No competitive throughput claims.
 - No float-quality parity beyond the verified prompts; no production chat-quality evaluation.
 - Larger models / longer contexts than the TinyLlama proof target aren't validated here.
+- The `.mgw` loaders perform basic format and tensor-shape checks but are **not hardened against adversarial files** — `--load` / `--native` expect a trusted file: the committed `model.mgw`, one you trained, or one you exported yourself.
 
 > Aside: along the way we explored a geometric sign-code pre-filter for attention (a machine-native shortcut for the score computation). On this workload it gave no measurable benefit and is omitted from this artifact. The honest result is "didn't help here," kept out so the code that ships is only the code that earns its place.
 
 ### A parked experiment: GPU (`gpu/`)
 
 There's a CUDA side-branch in [`gpu/`](gpu/) — kept as an honest **null result**, not part of the main build. A full FP16 TinyLlama decode on an RTX-class GPU reproduced the CPU's token output exactly, but FP16 is *floating point*, so it sits outside this project's zero-float thesis; the integer-on-GPU directions (INT8 / FP8 / INT64 kernels, CUDA-graph capture) were parked as negative-or-mixed. It needs `nvcc` + a GPU and is deliberately not wired into `make all`. See [`gpu/README.md`](gpu/README.md) for what was tried and why none of it earned a place in the integer core.
+
+## Validated on real hardware (`validation/cpu/`)
+
+The determinism gate and the tiny GPT are not just "portable in theory" — both have
+been run on real silicon, with results recorded in [`validation/cpu/`](validation/cpu/)
+(one folder per target, harness + raw captured transcript). Two checks per target:
+
+- **determinism** — the target recomputes the full `fp_determinism` grid on the
+  portable backend and must reproduce the committed golden hash `c0d933ea340452ec`.
+- **microgpt inference** — the laptop-trained [`model.mgw`](model.mgw) (115,576 bytes,
+  committed) is baked into flash; the firmware loads it zero-copy (`mgpt_load_mem`,
+  weights stay in memory-mapped flash, never RAM) and must reproduce the training
+  host's 20 sampled names **byte-for-byte**, PRNG stream included.
+
+Every target passed both:
+
+| target | ISA | determinism | 20 samples |
+|---|---|---|---|
+| XIAO RP2040 (Cortex-M0+ @ 133 MHz) | Armv6-M | 10.9 s | 6.7 s |
+| Raspberry Pi Pico 2 (RP2350, ARM mode, Cortex-M33) | Armv8-M | 4.1 s | 3.1 s |
+| Raspberry Pi Pico 2 (RP2350, RISC-V mode, Hazard3) | rv32imac | 5.4 s | 3.8 s |
+| ESP32-C6 | rv32imac | 5.6 s | 2.0 s |
+| Heltec V3 (ESP32-S3, LX7 @ 240 MHz) | Xtensa | 3.9 s | 1.1 s |
+| LILYGO T-Beam (ESP32, LX6 @ 240 MHz) | Xtensa | 4.2 s | 2.6 s |
+| XIAO nRF52840 (Cortex-M4F @ 64 MHz) | Armv7E-M | 13.9 s | 3.4 s |
+| Raspberry Pi 1 B+ (ARMv6, 32-bit Linux) | ARMv6 | 0.7 s | 0.2 s |
+| AMD Ryzen 7 7700 (Linux, gcc) | x86-64 | native + portable | byte-identical |
+| Intel Core i7-7700 (Linux, gcc) | x86-64 | native + portable | byte-identical |
+
+Same die, two ISAs: the Pico 2 reproduces the identical output in both its ARM
+and RISC-V boot modes (two separate firmware builds, one chip). The three Linux
+rows go further and rerun the **full 5000-step training**: the AMD, Intel, and
+ARMv6 Pi 1 hosts each reproduce the committed `model.mgw` byte-for-byte (as
+does the arm64 macOS host that trained it). The harness conventions follow
+astro-nav-int's hardware test records; `validation/cpu/HOWTO.md` covers host
+setup, flashing quirks, and how a run is provenance-stamped (host pin,
+firmware/source SHA-256, monitor transcript).
 
 ## Build and run
 
@@ -171,6 +211,8 @@ Integer targets build with **no `-lm`** — pure integer, no external math depen
 | `tokenizer.h` | C-native tokenizer for Hugging Face `tokenizer.json` |
 | `hf_tokenizer_bridge.py` | Python tokenizer fallback when the C path can't be used |
 | `scripts/download_input.sh` | Downloads the public names dataset into `input.txt` for the tiny GPT demo |
+| `model.mgw` | Committed pretrained tiny-GPT weights (Q16.48, 115,576 B) — the reference image for `--load` and the MCU harnesses |
+| `validation/cpu/` | Hardware validation records: determinism + inference harnesses and raw transcripts per target |
 | `gpu/` | Parked CUDA experiments (FP16/INT benchmarks) — honest null result, not in `make all`; see `gpu/README.md` |
 
 ## Acknowledgements
