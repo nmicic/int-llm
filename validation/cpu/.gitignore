@@ -8,6 +8,7 @@
 # generated at prepare time
 */harness/include/build_info.h
 */harness/include/det_pin.h
+*/harness/include/fp_det_grid.h
 */harness/include/gpt_pin.h
 */harness/include/model_mgw.h
 # build + host-reference artifacts
