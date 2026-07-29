@@ -1,4 +1,4 @@
-/* Host reference for the XIAO_RP2040_GPT harness.
+/* Host reference for the ARDUINO_MKR_ZERO_GPT harness.
  *
  * Loads model.mgw from disk into memory and drives the EXACT entry points
  * the firmware uses (mgpt_load_mem + mgpt_generate_sample), printing the
@@ -8,7 +8,8 @@
  * of the full inference path, PRNG stream included.
  *
  * Hash definition (must match src/main.cpp): FNV-1a 64 over each sample's
- * characters followed by one '\n', samples in order, standard offset/prime.
+ * characters followed by one '\n', samples in order, project-fixed
+ * offset/prime.
  */
 #include <stdio.h>
 #include <stdlib.h>

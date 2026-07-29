@@ -1,6 +1,6 @@
 # HW test: Heltec WiFi LoRa 32 V3 — microgpt_int INFERENCE on Xtensa
 
-Status: **PASS** (2026-07-28, tree `1b706ecf6c7f`)
+Status: **PASS** (2026-07-29, tree `cf0bd4cc8589`)
 
 Same train-big/run-small loop as the other `*_GPT` targets, now on the
 third ISA family: the model was trained on an arm64 Mac (`./gpt_int
@@ -21,7 +21,7 @@ Samples: kayla, daia, lee, kayan, maha, kaia, ramiar, anall, ainale, kelel,
 malana, arile, marion, avile, calan, kaylia, diaria, sarona, jahel, karin —
 identical to the Mac's `./gpt_int --save` / `--load` output.
 
-Raw capture: `results/2026-07-28-heltec-s3-gpt.txt`.
+Raw capture: `results/2026-07-29-heltec-s3-gpt.txt`.
 
 ## Memory
 

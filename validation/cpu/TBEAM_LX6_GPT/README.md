@@ -1,6 +1,6 @@
 # HW test: LILYGO T-Beam — microgpt_int INFERENCE on Xtensa LX6
 
-Status: **PASS** (2026-07-28, tree `1b706ecf6c7f`)
+Status: **PASS** (2026-07-29, tree `cf0bd4cc8589`)
 
 Same train-big/run-small loop as the other `*_GPT` targets, on the
 original ESP32's dual-core LX6 (vs the Heltec V3's newer LX7): the model
@@ -26,7 +26,7 @@ identical to the Mac's `./gpt_int --save` / `--load` output. Note the LX6
 the 160 MHz C6 — the older core pays more for 64-bit multiply and flash
 cache misses.
 
-Raw capture: `results/2026-07-28-tbeam-lx6-gpt.txt`.
+Raw capture: `results/2026-07-29-tbeam-lx6-gpt.txt`.
 
 ## Memory
 

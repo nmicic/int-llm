@@ -1,10 +1,10 @@
-# run 2026-07-28T18:32:19Z
+# run 2026-07-29T13:47:46Z
 # target-folder XIAO_RP2040_GPT env xiao_rp2040_gpt
-# firmware sha256 375565498bb2597ef55b4f8285c58335aab468c734ecb33873e9013bf9e43a45
+# firmware sha256 9e84b279570adc0426f8eb1a18f850c251087dd20c7195c4425e0b5f70eff3ac
 # platform https://github.com/maxgerhardt/platform-raspberrypi.git#aa70b802be8851668053d4f09734e4089fe41932
 # source sha256 4374894cdf41569768101307fb609e123984da5034a88d19fa8c7ca26cfcaf73  src/microgpt_int.c
 # source sha256 f9dc2dc10143c553c0a7675747527488cda9a84c35b295156d049cc3d992d49f  src/main.cpp
-# source sha256 f9d7c329c325ca426f0786ae651d45e9d907971a66d41d11cc8dac264591444f  include/build_info.h
+# source sha256 a6c1f6218bb822c903f603e38dcb9d709eca88e6445a33121a1dbac7a06995b7  include/build_info.h
 # source sha256 38520b39b86f5fe90f7d92cd3a3026877e16370f15a85c9b5f22079e291abf6c  include/fp_math.h
 # source sha256 c7d9b5a8cdf026f55e380e7b9bbb1c413e784d659fc5bff98b1b3a0a150c3bf5  include/gpt_pin.h
 # source sha256 812f4e97c619bed8ef901813a0fca3fa6c8532e1a51d22e7da50dd69f6c31c37  include/model_mgw.h
@@ -14,6 +14,8 @@
 # PlatformIO Core Executable  /opt/homebrew/bin/platformio
 # Python Executable           /opt/homebrew/Cellar/platformio/6.1.19_1/libexec/bin/python
 port: usbmodem-<REDACTED>
+sample  2: daia
+sample  3: lee
 sample  4: kayan
 sample  5: maha
 sample  6: kaia
@@ -31,6 +33,6 @@ sample 17: diaria
 sample 18: sarona
 sample 19: jahel
 sample 20: karin
-target xiao-rp2040-gpt arch arm tree 1b706ecf6c7f PROFILE microgpt hash ff4bc4bf7d4fd99d (6724 ms, informational)
+target xiao-rp2040-gpt arch arm tree cf0bd4cc8589 PROFILE microgpt hash ff4bc4bf7d4fd99d (6724 ms, informational)
 profile: PASS (target reproduces the host sample stream)
-capture: OK target=xiao-rp2040-gpt arch=arm tree=1b706ecf6c7f profile=microgpt hash=ff4bc4bf7d4fd99d
+capture: OK target=xiao-rp2040-gpt arch=arm tree=cf0bd4cc8589 profile=microgpt hash=ff4bc4bf7d4fd99d

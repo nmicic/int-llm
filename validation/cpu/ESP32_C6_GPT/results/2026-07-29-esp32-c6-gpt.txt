@@ -1,0 +1,26 @@
+# run 2026-07-29T13:43:30Z
+# target-folder ESP32_C6_GPT env esp32c6_gpt
+# firmware sha256 fe3329b729184de54b5452c362e541482c07f8169fa47ab2f0977e11bc8cabdf
+# platform https://github.com/pioarduino/platform-espressif32/releases/download/54.03.21-2/platform-espressif32.zip
+# source sha256 4374894cdf41569768101307fb609e123984da5034a88d19fa8c7ca26cfcaf73  src/microgpt_int.c
+# source sha256 eadb57c9f9f6dde451a7b71d3f0ba43b62cbe2ba76938ec0e83ee942d5046b72  src/main.cpp
+# source sha256 a6c1f6218bb822c903f603e38dcb9d709eca88e6445a33121a1dbac7a06995b7  include/build_info.h
+# source sha256 38520b39b86f5fe90f7d92cd3a3026877e16370f15a85c9b5f22079e291abf6c  include/fp_math.h
+# source sha256 c7d9b5a8cdf026f55e380e7b9bbb1c413e784d659fc5bff98b1b3a0a150c3bf5  include/gpt_pin.h
+# source sha256 812f4e97c619bed8ef901813a0fca3fa6c8532e1a51d22e7da50dd69f6c31c37  include/model_mgw.h
+# PlatformIO Core             6.1.19
+# Python                      3.14.6-final.0
+# PlatformIO Core Directory   $HOME/.platformio
+# PlatformIO Core Executable  /opt/homebrew/bin/platformio
+# Python Executable           /opt/homebrew/Cellar/platformio/6.1.19_1/libexec/bin/python
+port: usbmodem-<REDACTED>
+sample 14: avile
+sample 15: calan
+sample 16: kaylia
+sample 17: diaria
+sample 18: sarona
+sample 19: jahel
+sample 20: karin
+target esp32-c6-gpt arch rv32 tree cf0bd4cc8589 PROFILE microgpt hash ff4bc4bf7d4fd99d (2047 ms, informational)
+profile: PASS (target reproduces the host sample stream)
+capture: OK target=esp32-c6-gpt arch=rv32 tree=cf0bd4cc8589 profile=microgpt hash=ff4bc4bf7d4fd99d

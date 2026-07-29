@@ -25,8 +25,9 @@ if ! git -C "$REPO" diff --quiet HEAD -- fp_determinism.c fp_math.h 2>/dev/null;
 fi
 printf '#define BUILD_COMMIT "%s%s"\n' "$COMMIT" "$DIRTY" > "$HERE/include/build_info.h"
 
-# External grid: the SAMD21's 32 KB SRAM cannot hold the ~34 KB input grid,
-# so this target builds with -DFP_DET_EXTERNAL_GRID and reads it from flash.
+# External grid: the ATmega2560's 8 KB SRAM cannot hold the ~34 KB input
+# grid, so this target builds with -DFP_DET_EXTERNAL_GRID and reads it from
+# program flash.
 # Emit the const table from the SAME copied source (-DFP_DET_GRID_EMIT) —
 # emitter and consumer are one file, so the values match by construction.
 HOSTDIR="$HERE/.hostref"

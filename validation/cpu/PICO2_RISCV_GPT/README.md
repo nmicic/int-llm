@@ -1,6 +1,6 @@
 # HW test: Pico 2 (RP2350, RISC-V mode) — microgpt_int INFERENCE
 
-Status: **PASS** (2026-07-28, tree `1b706ecf6c7f`)
+Status: **PASS** (2026-07-29, tree `cf0bd4cc8589`)
 
 Same physical board as `PICO2_ARM_GPT`, switched to the RP2350's Hazard3
 RISC-V execution mode (`board_build.mcu = rp2350-riscv`). The Mac-trained
@@ -13,15 +13,15 @@ two-limb backend) — reproducing the Mac training run's 20 sampled names
 | | samples hash | runtime (informational) |
 |---|---|---|
 | host reference (arm64 macOS, `__int128` backend, same entry points) | `ff4bc4bf7d4fd99d` | — |
-| Pico 2 same chip, ARM mode (Cortex-M33) | `ff4bc4bf7d4fd99d` | 3089 ms |
-| **Pico 2 (Hazard3 rv32imac @ 150 MHz, RISC-V mode)** | **`ff4bc4bf7d4fd99d`** | 3755 ms (20 samples, ~188 ms/name) |
+| Pico 2 same chip, ARM mode (Cortex-M33) | `ff4bc4bf7d4fd99d` | 3090 ms |
+| **Pico 2 (Hazard3 rv32imac @ 150 MHz, RISC-V mode)** | **`ff4bc4bf7d4fd99d`** | 3756 ms (20 samples, ~188 ms/name) |
 
 Samples: kayla, daia, lee, kayan, maha, kaia, ramiar, anall, ainale, kelel,
 malana, arile, marion, avile, calan, kaylia, diaria, sarona, jahel, karin —
 identical to the Mac's `./gpt_int --save` / `--load` output, and to what
 the very same die prints when running its ARM cores.
 
-Raw capture: `results/2026-07-28-pico2-riscv-gpt.txt`.
+Raw capture: `results/2026-07-29-pico2-riscv-gpt.txt`.
 
 ## Memory
 

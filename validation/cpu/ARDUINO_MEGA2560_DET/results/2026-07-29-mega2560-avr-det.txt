@@ -1,0 +1,19 @@
+# run 2026-07-29T13:17:37Z
+# target-folder ARDUINO_MEGA2560_DET env mega2560_det
+# firmware sha256 189e59e485f86501e0397e841121ecb79777f14528e7129e3dfcf4dae87eef0e
+# platform atmelavr @ 5.3.0
+# source sha256 600bd2ad71ad689ff8db55480b45a39ee90b42bf6c712a59d8d8c2f4f6f97217  src/fp_determinism.c
+# source sha256 8219f1a21ce07ca3832a56851176ac70ac73bf89864a44b0ea2e138ccf09ae41  src/main.cpp
+# source sha256 a6c1f6218bb822c903f603e38dcb9d709eca88e6445a33121a1dbac7a06995b7  include/build_info.h
+# source sha256 ee4a9ec5044790508ae0da0e863fe89e320712aa127ed6af5bd4e57df8aea4d1  include/det_pin.h
+# source sha256 4480a7772ce17e6922fb6de54d6b85e9aac4682d37138d65d4c2ad30cdbb6698  include/fp_det_grid.h
+# source sha256 38520b39b86f5fe90f7d92cd3a3026877e16370f15a85c9b5f22079e291abf6c  include/fp_math.h
+# PlatformIO Core             6.1.19
+# Python                      3.14.6-final.0
+# PlatformIO Core Directory   $HOME/.platformio
+# PlatformIO Core Executable  /opt/homebrew/bin/platformio
+# Python Executable           /opt/homebrew/Cellar/platformio/6.1.19_1/libexec/bin/python
+port: usbmodem-<REDACTED>
+target mega2560-avr-det arch avr tree cf0bd4cc8589 PROFILE det hash c0d933ea340452ec (747901 ms, informational)
+profile: PASS (target reproduces the host determinism hash)
+capture: OK target=mega2560-avr-det arch=avr tree=cf0bd4cc8589 profile=det hash=c0d933ea340452ec

@@ -1,6 +1,6 @@
 # HW test: LILYGO T-Beam — fp_math.h determinism gate on Xtensa LX6
 
-Status: **PASS** (2026-07-28, tree `1b706ecf6c7f`)
+Status: **PASS** (2026-07-29, tree `cf0bd4cc8589`)
 
 Second Xtensa target, but a different core generation than the Heltec V3:
 the original dual-core LX6 (ESP32-D0WDQ6-V3) vs the S3's LX7. Runs
@@ -15,7 +15,7 @@ host pin, which prepare.sh verifies against the committed golden
 | Heltec V3 ESP32-S3 (Xtensa LX7 @ 240 MHz) | `c0d933ea340452ec` | 3883 ms |
 | **T-Beam ESP32-D0WDQ6-V3 (Xtensa LX6 @ 240 MHz)** | **`c0d933ea340452ec`** | 4237 ms |
 
-Raw capture: `results/2026-07-28-tbeam-lx6-det.txt`.
+Raw capture: `results/2026-07-29-tbeam-lx6-det.txt`.
 
 ## Serial
 

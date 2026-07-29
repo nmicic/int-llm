@@ -1,6 +1,6 @@
 # HW test: Seeed Studio XIAO RP2040 — microgpt_int INFERENCE on Armv6-M
 
-Status: **PASS** (2026-07-28, tree `1b706ecf6c7f`)
+Status: **PASS** (2026-07-29, tree `cf0bd4cc8589`)
 
 The train-big/run-small loop, closed on a $5 microcontroller: the model was
 trained on an arm64 Mac (`./gpt_int --save model.mgw`, 5000 steps, Q16.48
@@ -19,7 +19,7 @@ Samples: kayla, daia, lee, kayan, maha, kaia, ramiar, anall, ainale, kelel,
 malana, arile, marion, avile, calan, kaylia, diaria, sarona, jahel, karin —
 identical to the Mac's `./gpt_int --save` / `--load` output.
 
-Raw capture: `results/2026-07-28-xiao-rp2040-gpt.txt` (capture attaches
+Raw capture: `results/2026-07-29-xiao-rp2040-gpt.txt` (capture attaches
 mid-iteration, so the file starts at sample 3; the hash covers all 20).
 
 ## Memory

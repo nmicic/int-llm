@@ -1,6 +1,6 @@
 # HW test: Seeed XIAO nRF52840 — microgpt_int INFERENCE on Cortex-M4F
 
-Status: **PASS** (2026-07-28, tree `1b706ecf6c7f`)
+Status: **PASS** (2026-07-29, tree `cf0bd4cc8589`)
 
 Same train-big/run-small loop as the other `*_GPT` targets: Mac-trained
 115,576-byte `.mgw` baked into flash rodata, firmware runs
@@ -21,7 +21,7 @@ Samples: kayla, daia, lee, kayan, maha, kaia, ramiar, anall, ainale, kelel,
 malana, arile, marion, avile, calan, kaylia, diaria, sarona, jahel, karin —
 identical to the Mac's `./gpt_int --save` / `--load` output.
 
-Raw capture: `results/2026-07-28-xiao-nrf52840-gpt.txt`.
+Raw capture: `results/2026-07-29-xiao-nrf52840-gpt.txt`.
 
 ## The crash this target exposed (fixed in microgpt_int.c)
 

@@ -4,15 +4,15 @@
 
 Copyright (c) 2026 Nenad Mićić — Apache-2.0
 
-**Bit-exact, deterministic LLM inference in pure-integer C — from x86 servers down to 32-bit microcontrollers.**
+**Bit-exact, deterministic LLM inference in pure-integer C — from x86 servers down to 32-bit microcontrollers, with the arithmetic contract verified down to an 8-bit AVR.**
 
-int-llm runs a real Llama-family checkpoint (TinyLlama-1.1B) through a fixed-point integer compute core — no `float`, no `double`, no `libm` — and produces **bit-identical outputs across platforms and compilers**. The determinism gate hashes the integer outputs and matches a committed golden hash on x86_64/gcc, arm64/clang, and every recorded 32-bit target. Run it today, run it next year on different hardware: same bits.
+int-llm runs a real Llama-family checkpoint (TinyLlama-1.1B) through a fixed-point integer compute core — no `float`, no `double`, no `libm` — and produces **bit-identical outputs across platforms and compilers**. The determinism gate hashes the integer outputs and matches a committed golden hash on x86_64/gcc, arm64/clang, every recorded 32-bit target, and even an 8-bit AVR. Run it today, run it next year on different hardware: same bits.
 
 The integer path also matches the float reference **token-for-token** (80/80 on the greedy verification gate), and a tiny character-level GPT *trains and samples* entirely in integer arithmetic. You can even convert the whole model into an all-integer `.mgw` weight file and run inference straight from that — the original floating-point weights never reappear in the compute path.
 
 This is a feasibility demo, deliberately slow and simple. What it provides is something most LLM stacks don't: a **reproducible, exact reference** — an oracle — for anyone working on quantization, numerical drift, regression testing, or deterministic inference.
 
-`fp_math.h` no longer requires `__int128`: it now carries two interchangeable wide-math backends — native `__int128` where the compiler has it, and a portable two-limb software backend (C99 + 64-bit integers only) everywhere else — Cortex-M, RV32, Xtensa, ARMv6 — computing the **same bits**. This was matured in the [astro-nav-int](https://github.com/nmicic/astro-nav-int) sibling project and folded back here. `make determinism` and `make determinism-portable` both reproduce the committed golden hash, `gpt_int` training on a 2014 Raspberry Pi 1 B+ (32-bit ARMv6, no `__int128`) is byte-identical to the same run on a 64-bit host, and the train-big/run-small loop closes on microcontrollers: train on a laptop (`./gpt_int --save model.mgw`), run inference-only from the same weight file on a $5 RP2040 — byte-for-byte the same samples (see [`validation/cpu/`](validation/cpu/)). `llama_int` still uses raw `__int128` accumulators directly and remains 64-bit-only for now.
+`fp_math.h` no longer requires `__int128`: it now carries two interchangeable wide-math backends — native `__int128` where the compiler has it, and a portable two-limb software backend (C99 + 64-bit integers only) everywhere else — Cortex-M, RV32, Xtensa, ARMv6, even 8-bit AVR — computing the **same bits**. This was matured in the [astro-nav-int](https://github.com/nmicic/astro-nav-int) sibling project and folded back here. `make determinism` and `make determinism-portable` both reproduce the committed golden hash, `gpt_int` training on a 2014 Raspberry Pi 1 B+ (32-bit ARMv6, no `__int128`) is byte-identical to the same run on a 64-bit host, and the train-big/run-small loop closes on microcontrollers: train on a laptop (`./gpt_int --save model.mgw`), run inference-only from the same weight file on a $5 RP2040 — byte-for-byte the same samples (see [`validation/cpu/`](validation/cpu/)). `llama_int` still uses raw `__int128` accumulators directly and remains 64-bit-only for now.
 
 - `gpt_int`: integer-only Q16.48 character GPT — trains **and** samples from a small downloaded names dataset; `--save`/`--load model.mgw` round-trips the trained weights as pure integers
 - `gpt_float`: float32 baseline (for comparison)
@@ -131,7 +131,7 @@ Weights load from a standard Hugging Face directory (`config.json` + safetensors
 
 - A real Llama-family checkpoint (TinyLlama-1.1B-Chat) runs end-to-end through a pure-integer inference core, prompt text to decoded text.
 - The integer output matches the float reference **token-for-token** (80/80 across the benchmark prompts) under greedy decoding.
-- The core fixed-point math is **bit-exact on the tested platforms**: the `make determinism` hash is identical on x86_64/gcc (AMD and Intel), arm64/clang, 32-bit ARMv6 Linux, and six bare-metal microcontroller boards in seven ISA-mode configurations across three ISA families (ARM Cortex-M, RISC-V, Xtensa — the Pico 2 is tested in both its ARM and RISC-V modes) — see [`validation/cpu/`](validation/cpu/). This is the headline property — deterministic bits, demonstrated by a gate rather than asserted.
+- The core fixed-point math is **bit-exact on the tested platforms**: the `make determinism` hash is identical on x86_64/gcc (AMD and Intel), arm64/clang, 32-bit ARMv6 Linux, and eight bare-metal microcontroller boards in nine ISA-mode configurations across four ISA families (ARM Cortex-M, RISC-V, Xtensa, 8-bit AVR — the Pico 2 is tested in both its ARM and RISC-V modes) — see [`validation/cpu/`](validation/cpu/). This is the headline property — deterministic bits, demonstrated by a gate rather than asserted.
 - The tiny character GPT (`gpt_int`) both **trains and samples** entirely in integer arithmetic after downloading the small public names dataset.
 
 **Not proven (and not claimed):**
@@ -153,14 +153,16 @@ The determinism gate and the tiny GPT are not just "portable in theory" — both
 been run on real silicon, with results recorded in [`validation/cpu/`](validation/cpu/)
 (one folder per target, harness + raw captured transcript). Two checks per target:
 
-- **determinism** — the target recomputes the full `fp_determinism` grid on the
+- **determinism** — the target evaluates the full `fp_determinism` grid on the
   portable backend and must reproduce the committed golden hash `c0d933ea340452ec`.
 - **microgpt inference** — the laptop-trained [`model.mgw`](model.mgw) (115,576 bytes,
   committed) is baked into flash; the firmware loads it zero-copy (`mgpt_load_mem`,
   weights stay in memory-mapped flash, never RAM) and must reproduce the training
   host's 20 sampled names **byte-for-byte**, PRNG stream included.
 
-Every target passed both:
+Every 32-bit MCU target passed both checks. The 8-bit Mega 2560 runs the
+determinism gate only — microgpt's ~13 KB of inference state exceeds its
+8 KB SRAM:
 
 | target | ISA | determinism | 20 samples |
 |---|---|---|---|
@@ -171,12 +173,21 @@ Every target passed both:
 | Heltec V3 (ESP32-S3, LX7 @ 240 MHz) | Xtensa | 3.9 s | 1.1 s |
 | LILYGO T-Beam (ESP32, LX6 @ 240 MHz) | Xtensa | 4.2 s | 2.6 s |
 | XIAO nRF52840 (Cortex-M4F @ 64 MHz) | Armv7E-M | 13.9 s | 3.4 s |
+| Arduino MKR Zero (SAMD21, Cortex-M0+ @ 48 MHz) | Armv6-M | 37.2 s | 26.4 s |
+| Arduino Mega 2560 (ATmega2560, 8-bit AVR @ 16 MHz) | AVR | 747.9 s | n/a — 8 KB RAM |
 | Raspberry Pi 1 B+ (ARMv6, 32-bit Linux) | ARMv6 | 0.7 s | 0.2 s |
 | AMD Ryzen 7 7700 (Linux, gcc) | x86-64 | native + portable | byte-identical |
 | Intel Core i7-7700 (Linux, gcc) | x86-64 | native + portable | byte-identical |
 
 Same die, two ISAs: the Pico 2 reproduces the identical output in both its ARM
-and RISC-V boot modes (two separate firmware builds, one chip). The three Linux
+and RISC-V boot modes (two separate firmware builds, one chip). The MKR Zero is
+the smallest 32-bit part in the fleet — 256 KB flash / 32 KB SRAM — and holds
+code plus the whole 115 KB weight file in 50.9% of its flash; its SRAM can't
+even fit the determinism input grid, so that target reads the grid from flash
+(`-DFP_DET_EXTERNAL_GRID`). The Mega 2560 pushes the same claim to 8-bit: an
+ATmega2560 with no 64-bit registers at all — every wide operation synthesized
+from 8-bit ALU instructions, the grid read from program memory via `__flash` —
+reproduces the identical 64-bit hash in 800 bytes of RAM. The three Linux
 rows go further and rerun the **full 5000-step training**: the AMD, Intel, and
 ARMv6 Pi 1 hosts each reproduce the committed `model.mgw` byte-for-byte (as
 does the arm64 macOS host that trained it). The harness conventions follow

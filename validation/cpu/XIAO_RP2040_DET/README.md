@@ -1,6 +1,6 @@
 # HW test: Seeed Studio XIAO RP2040 — fp_math.h determinism gate on Armv6-M
 
-Status: **PASS** (2026-07-28, tree `1b706ecf6c7f`)
+Status: **PASS** (2026-07-29, tree `cf0bd4cc8589`)
 
 Runs `fp_det_compute()` from `fp_determinism.c` (built with
 `-DFP_DET_NO_MAIN`, portable two-limb backend — the RP2040's Cortex-M0+
@@ -12,7 +12,7 @@ verifies against the committed golden `tests/determinism_golden.txt`.
 | host reference (arm64 macOS, `__int128` backend) + committed golden | `c0d933ea340452ec` | — |
 | **XIAO RP2040 Cortex-M0+ (Armv6-M)** | **`c0d933ea340452ec`** | 10851 ms |
 
-Raw capture: `results/2026-07-28-xiao-rp2040-det.txt`.
+Raw capture: `results/2026-07-29-xiao-rp2040-det.txt`.
 
 ## Hardware
 
