@@ -66,7 +66,7 @@ make llama_int
 
 `--prompt` uses the C-native tokenizer when `models/tinyllama/tokenizer.json` is present (it is, in the HF download); otherwise it falls back to a Python bridge that needs `transformers`. CPU-only and slow — that's expected; this is a feasibility demo, not a fast runtime. (Default is layer-streaming, ~0.2 tok/s on a desktop CPU; add `--cache-layers` to hold all weights in RAM for a faster, higher-memory run.)
 
-The repo does not ship TinyLlama or other downloaded checkpoint weights; those remain under their upstream licenses. The only committed weights are the 115,576-byte [`model.mgw`](model.mgw) tiny-GPT demo model, trained from the public names dataset.
+The repo does not ship TinyLlama or other downloaded checkpoint weights; those remain under their upstream licenses. The only committed weights are the 115,576-byte [`model.mgw`](model.mgw) tiny-GPT demo model, trained from the public names dataset — also published with a full model card on the Hugging Face Hub at [huggingface.co/nmicic/int-llm](https://huggingface.co/nmicic/int-llm).
 
 ### 3. (The fun part) Convert the whole model to integer weights, then run from those
 
@@ -211,7 +211,7 @@ Integer targets build with **no `-lm`** — pure integer, no external math depen
 | `tokenizer.h` | C-native tokenizer for Hugging Face `tokenizer.json` |
 | `hf_tokenizer_bridge.py` | Python tokenizer fallback when the C path can't be used |
 | `scripts/download_input.sh` | Downloads the public names dataset into `input.txt` for the tiny GPT demo |
-| `model.mgw` | Committed pretrained tiny-GPT weights (Q16.48, 115,576 B) — the reference image for `--load` and the MCU harnesses |
+| `model.mgw` | Committed pretrained tiny-GPT weights (Q16.48, 115,576 B) — the reference image for `--load` and the MCU harnesses; mirrored on [Hugging Face](https://huggingface.co/nmicic/int-llm) |
 | `validation/cpu/` | Hardware validation records: determinism + inference harnesses and raw transcripts per target |
 | `gpu/` | Parked CUDA experiments (FP16/INT benchmarks) — honest null result, not in `make all`; see `gpu/README.md` |
 
