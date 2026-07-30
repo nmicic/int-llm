@@ -33,7 +33,7 @@ Raw capture: `results/2026-07-29-heltec-s3-gpt.txt`.
 
 ## Serial quirk
 
-USB-C → CP2102 UART bridge (`10C4:EA60`, `/dev/cu.usbserial-0001`) →
+USB-C → CP2102 UART bridge (`10C4:EA60`, `/dev/cu.usbserial-<REDACTED>`) →
 UART0; the S3's native USB is not on the connector. `Serial` pinned to
 UART0 via `ARDUINO_USB_CDC_ON_BOOT=0`; pass the port explicitly.
 

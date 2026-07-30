@@ -3,7 +3,7 @@
 #   sh run_test.sh <TARGET_FOLDER> [serial-port]
 # e.g.
 #   sh run_test.sh PICO2_RISCV_DET
-#   sh run_test.sh PICO2_ARM_DET /dev/cu.usbmodem101   # explicit port (USB hub)
+#   sh run_test.sh PICO2_ARM_DET /dev/cu.usbmodemXXX   # explicit port (USB hub)
 #
 # Writes results/<date>-<target-name>.txt with a provenance header (firmware
 # and prepared-source SHA-256s, env, platform pin, toolchain) followed by the

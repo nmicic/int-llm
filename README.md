@@ -6,7 +6,7 @@ Copyright (c) 2026 Nenad Mićić — Apache-2.0
 
 **Bit-exact, deterministic LLM inference in pure-integer C — from x86 servers down to 32-bit microcontrollers, with the arithmetic contract verified down to an 8-bit AVR.**
 
-int-llm runs a real Llama-family checkpoint (TinyLlama-1.1B) through a fixed-point integer compute core — no `float`, no `double`, no `libm` — and produces **bit-identical outputs across platforms and compilers**. The determinism gate hashes the integer outputs and matches a committed golden hash on x86_64/gcc, arm64/clang, every recorded 32-bit target, and even an 8-bit AVR. Run it today, run it next year on different hardware: same bits.
+int-llm runs a real Llama-family checkpoint (TinyLlama-1.1B) through a fixed-point integer compute core — no `float`, no `double`, no `libm` — and produces **bit-identical outputs across platforms and compilers**. The determinism gate hashes the integer outputs and matches a committed golden hash on x86_64/gcc, arm64/clang, aarch64/gcc, every recorded 32-bit target, and even an 8-bit AVR. Run it today, run it next year on different hardware: same bits.
 
 The integer path also matches the float reference **token-for-token** (80/80 on the greedy verification gate), and a tiny character-level GPT *trains and samples* entirely in integer arithmetic. You can even convert the whole model into an all-integer `.mgw` weight file and run inference straight from that — the original floating-point weights never reappear in the compute path.
 
@@ -82,6 +82,8 @@ The repo does not ship TinyLlama or other downloaded checkpoint weights; those r
 ```
 
 The `.mgw` file is the entire model as a flat array of `int64_t` Q16.48 values — the original float weights never reappear in the model loader or compute path. `--native` mmaps it (all layers resident, faster); `--native-stream` reads layers on demand for low-RAM machines. This is the "fully integer, weights and all" version of the demo: no floating-point weights or arithmetic in the model core.
+Version 1 is intentionally host-native-endian; its header carries an endian
+tag so a file from the opposite byte order is rejected rather than misread.
 
 ### 4. (Optional) Verify the integer output matches the float reference, token-for-token
 
@@ -131,7 +133,8 @@ Weights load from a standard Hugging Face directory (`config.json` + safetensors
 
 - A real Llama-family checkpoint (TinyLlama-1.1B-Chat) runs end-to-end through a pure-integer inference core, prompt text to decoded text.
 - The integer output matches the float reference **token-for-token** (80/80 across the benchmark prompts) under greedy decoding.
-- The core fixed-point math is **bit-exact on the tested platforms**: the `make determinism` hash is identical on x86_64/gcc (AMD and Intel), arm64/clang, 32-bit ARMv6 Linux, and eight bare-metal microcontroller boards in nine ISA-mode configurations across four ISA families (ARM Cortex-M, RISC-V, Xtensa, 8-bit AVR — the Pico 2 is tested in both its ARM and RISC-V modes) — see [`validation/cpu/`](validation/cpu/). This is the headline property — deterministic bits, demonstrated by a gate rather than asserted.
+- The core fixed-point math is **bit-exact on the tested platforms**: the `make determinism` hash is identical on x86_64/gcc (AMD and Intel), arm64/clang, aarch64/gcc (Raspberry Pi 5), 32-bit ARMv6 Linux, and eight bare-metal microcontroller boards in nine ISA-mode configurations across four ISA families (ARM Cortex-M, RISC-V, Xtensa, 8-bit AVR — the Pico 2 is tested in both its ARM and RISC-V modes) — see [`validation/cpu/`](validation/cpu/). This is the headline property — deterministic bits, demonstrated by a gate rather than asserted.
+- A separate QEMU user-mode matrix extends the compiler/ABI check to 12 emulated Linux configurations across 10 ISA families, including 32-bit and big-endian targets — see [`validation/qemu/`](validation/qemu/). These are supplementary emulation results, kept separate from the real-hardware count.
 - The tiny character GPT (`gpt_int`) both **trains and samples** entirely in integer arithmetic after downloading the small public names dataset.
 
 **Not proven (and not claimed):**
@@ -176,6 +179,8 @@ determinism gate only — microgpt's ~13 KB of inference state exceeds its
 | Arduino MKR Zero (SAMD21, Cortex-M0+ @ 48 MHz) | Armv6-M | 37.2 s | 26.4 s |
 | Arduino Mega 2560 (ATmega2560, 8-bit AVR @ 16 MHz) | AVR | 747.9 s | n/a — 8 KB RAM |
 | Raspberry Pi 1 B+ (ARMv6, 32-bit Linux) | ARMv6 | 0.7 s | 0.2 s |
+| Raspberry Pi 5 Model B 16 GB (Cortex-A76, Linux, gcc) | aarch64 | native + portable | byte-identical |
+| Apple M3 MacBook Air (macOS, clang; CPU only) | arm64 | native + portable | byte-identical |
 | AMD Ryzen 7 7700 (Linux, gcc) | x86-64 | native + portable | byte-identical |
 | Intel Core i7-7700 (Linux, gcc) | x86-64 | native + portable | byte-identical |
 
@@ -187,13 +192,39 @@ even fit the determinism input grid, so that target reads the grid from flash
 (`-DFP_DET_EXTERNAL_GRID`). The Mega 2560 pushes the same claim to 8-bit: an
 ATmega2560 with no 64-bit registers at all — every wide operation synthesized
 from 8-bit ALU instructions, the grid read from program memory via `__flash` —
-reproduces the identical 64-bit hash in 800 bytes of RAM. The three Linux
-rows go further and rerun the **full 5000-step training**: the AMD, Intel, and
-ARMv6 Pi 1 hosts each reproduce the committed `model.mgw` byte-for-byte (as
-does the arm64 macOS host that trained it). The harness conventions follow
+reproduces the identical 64-bit hash in 800 bytes of RAM. The four Linux
+rows go further and rerun the **full 5000-step training**: the AMD, Intel,
+ARMv6 Pi 1, and aarch64 Pi 5 hosts each reproduce the committed `model.mgw`
+byte-for-byte (as does the arm64 macOS host that trained it). The Pi 5 also
+loads an 8.2 GiB native TinyLlama `.mgw` from its normal filesystem via mmap
+and passes the full four-prompt float-reference gate, 80/80 tokens, without a
+RAM disk. The same final-source TinyLlama gate passes 80/80 on the Apple M3
+with low-memory native streaming and on both x86-64 hosts with tmpfs-backed
+mmap. The Mac run is CPU-only: the executable links only `libSystem`. It uses
+no Metal, Accelerate, Core ML, or other GPU API, and the Apple GPU was not
+used. The harness conventions follow
 astro-nav-int's hardware test records; `validation/cpu/HOWTO.md` covers host
 setup, flashing quirks, and how a run is provenance-stamped (host pin,
 firmware/source SHA-256, monitor transcript).
+
+## Supplementary QEMU portability matrix (`validation/qemu/`)
+
+An opt-in Linux runner cross-compiles the determinism gate and tiny-GPT
+inference loader as static binaries, then executes them under QEMU user mode.
+All 12 tested ABI/endian configurations reproduce the golden hash with both
+the compiler-selected and forced-portable backends. The six little-endian
+targets (PowerPC64LE, RISC-V 64, MIPS64EL, Alpha, i686, and SuperH-4) also
+reproduce the exact 20-sample output. The six big-endian targets (s390x,
+PowerPC64, SPARC64, MIPS64, PA-RISC, and Motorola 68k) correctly reject the
+native-endian little-endian `.mgw` rather than misreading it.
+All eight 64-bit targets also build, statically link, and start the full
+`llama_int` executable warning-free; the four 32-bit compilers lack the raw
+`__int128` support that `llama_int.c` still requires.
+
+This is compiler, ABI, word-size, and serialization coverage—not a substitute
+for real hardware, and not a TinyLlama performance benchmark. The reproducible
+runner, toolchain list, scope, and sanitized result transcript are in
+[`validation/qemu/`](validation/qemu/).
 
 ## Build and run
 
@@ -224,6 +255,7 @@ Integer targets build with **no `-lm`** — pure integer, no external math depen
 | `scripts/download_input.sh` | Downloads the public names dataset into `input.txt` for the tiny GPT demo |
 | `model.mgw` | Committed pretrained tiny-GPT weights (Q16.48, 115,576 B) — the reference image for `--load` and the MCU harnesses; mirrored on [Hugging Face](https://huggingface.co/nmicic/int-llm) |
 | `validation/cpu/` | Hardware validation records: determinism + inference harnesses and raw transcripts per target |
+| `validation/qemu/` | Supplementary cross-architecture QEMU user-mode matrix; 12 ABI/endian configurations |
 | `gpu/` | Parked CUDA experiments (FP16/INT benchmarks) — honest null result, not in `make all`; see `gpu/README.md` |
 
 ## Acknowledgements

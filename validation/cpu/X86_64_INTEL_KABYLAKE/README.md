@@ -1,6 +1,7 @@
 # CPU test: x86-64 Intel (Kaby Lake) Linux server — native gcc
 
-Status: **PASS** (2026-07-28, tree `1b706ecf6c7f`)
+Status: **PASS** (native suite 2026-07-28; TinyLlama final-source
+revalidation 2026-07-30)
 
 Native-Linux target, no PlatformIO: `../native_check.sh` copies the sources
 plus the committed `model.mgw` over ssh, builds with the distro gcc, and
@@ -16,13 +17,16 @@ byte-compares everything against the local (arm64 macOS) host — see
 | full training stdout | byte-identical to macOS host | 4441 ms |
 | `--save` after training | `.mgw` byte-identical to the committed `model.mgw` | — |
 
-Additional check on this host (not in the transcript): `llama_int` with
-TinyLlama-1.1B exported to a native 8.8 GB `.mgw`, `--native --generate
---max-new-tokens 16` over the four preset prompts, weights served from a
-tmpfs ramdisk — the generated token streams are identical to the AMD
-box's and unchanged from the pre-merge build (~1.0 tok/s here).
+The final `llama_int.c` source was revalidated after the Pi 5 portability
+fixes. TinyLlama-1.1B, exported to the 8,800,406,496-byte native `.mgw`,
+ran from tmpfs with `--native --benchmark`: all four prompts matched the
+float-reference oracle, **80/80 tokens**. The run took 76.7 seconds
+wall-clock, about 1.05–1.12 generated token/s per prompt.
 
-Raw capture: `results/2026-07-28-x86-intel-kabylake.txt`.
+Recorded transcripts:
+
+- `results/2026-07-28-x86-intel-kabylake.txt`
+- `results/2026-07-30-x86-intel-kabylake-tinyllama.txt`
 
 ## Hardware / Config
 

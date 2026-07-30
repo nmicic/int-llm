@@ -20,7 +20,7 @@ Raw capture: `results/2026-07-29-heltec-s3-det.txt`.
 ## Serial quirk
 
 The board's USB-C goes through a CP2102 USB-UART bridge (`10C4:EA60`,
-`/dev/cu.usbserial-0001`) to UART0 — the S3's native USB is NOT wired to
+`/dev/cu.usbserial-<REDACTED>`) to UART0 — the S3's native USB is NOT wired to
 the connector, so there is only ONE port. `ARDUINO_USB_CDC_ON_BOOT=0`
 keeps `Serial` on UART0, and the port must be passed to run_test.sh
 explicitly (capture auto-detect only matches `usbmodem*`). See

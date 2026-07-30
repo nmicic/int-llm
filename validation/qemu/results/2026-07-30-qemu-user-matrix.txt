@@ -1,0 +1,100 @@
+# int-llm QEMU user-mode portability matrix
+# date: 2026-07-30
+# runner: x86-64 Linux; QEMU user mode 8.2.2
+# scope: static cross-builds, -O3 -fwrapv -Wall -Wextra -Werror
+# exact pre-commit source identity follows; no hostname or device identifier retained
+
+source_sha256:
+38520b39b86f5fe90f7d92cd3a3026877e16370f15a85c9b5f22079e291abf6c  fp_math.h
+600bd2ad71ad689ff8db55480b45a39ee90b42bf6c712a59d8d8c2f4f6f97217  fp_determinism.c
+4374894cdf41569768101307fb609e123984da5034a88d19fa8c7ca26cfcaf73  microgpt_int.c
+63fdc6caa907d5e00e38912da49fe543aa609446be59186ef3095ea39083c469  safetensors.h
+4441ddb15fc56cfb3043cddf4eb717060bfedcd05a404ce18d66a7b3640a58cf  tokenizer.h
+b75a4ccbb20a96ed7d42e5f28c57ecf441308a9d8ea115ee37940ed4876d75bb  llama_int.c
+466cfe9dba7b888cdaa23dedf4b10351826795793448c8e95dcb0f7a61ed33eb  model.mgw
+
+=== ppc64le (little-endian, native-int128) ===
+powerpc64le-linux-gnu-gcc 13.3.0
+auto_backend=native-int128 hash=c0d933ea340452ec PASS
+forced_portable_hash=c0d933ea340452ec PASS
+llama_int_static_build_and_startup=PASS
+microgpt_output_sha256=f62a78d3e878b341cd59289a919ec4991b8055eaf0b4d715e2bc58bba2865d63 PASS
+
+=== riscv64 (little-endian, native-int128) ===
+riscv64-linux-gnu-gcc 13.3.0
+auto_backend=native-int128 hash=c0d933ea340452ec PASS
+forced_portable_hash=c0d933ea340452ec PASS
+llama_int_static_build_and_startup=PASS
+microgpt_output_sha256=f62a78d3e878b341cd59289a919ec4991b8055eaf0b4d715e2bc58bba2865d63 PASS
+
+=== mips64el (little-endian, native-int128) ===
+mips64el-linux-gnuabi64-gcc 12.4.0
+auto_backend=native-int128 hash=c0d933ea340452ec PASS
+forced_portable_hash=c0d933ea340452ec PASS
+llama_int_static_build_and_startup=PASS
+microgpt_output_sha256=f62a78d3e878b341cd59289a919ec4991b8055eaf0b4d715e2bc58bba2865d63 PASS
+
+=== alpha (little-endian, native-int128) ===
+alpha-linux-gnu-gcc 13.3.0
+auto_backend=native-int128 hash=c0d933ea340452ec PASS
+forced_portable_hash=c0d933ea340452ec PASS
+llama_int_static_build_and_startup=PASS
+microgpt_output_sha256=f62a78d3e878b341cd59289a919ec4991b8055eaf0b4d715e2bc58bba2865d63 PASS
+
+=== i686 (little-endian, portable-two-limb) ===
+i686-linux-gnu-gcc 13.3.0
+auto_backend=portable-two-limb hash=c0d933ea340452ec PASS
+forced_portable_hash=c0d933ea340452ec PASS
+llama_int_static_build=SKIP (target compiler has no __int128)
+microgpt_output_sha256=f62a78d3e878b341cd59289a919ec4991b8055eaf0b4d715e2bc58bba2865d63 PASS
+
+=== sh4 (little-endian, portable-two-limb) ===
+sh4-linux-gnu-gcc 13.3.0
+auto_backend=portable-two-limb hash=c0d933ea340452ec PASS
+forced_portable_hash=c0d933ea340452ec PASS
+llama_int_static_build=SKIP (target compiler has no __int128)
+microgpt_output_sha256=f62a78d3e878b341cd59289a919ec4991b8055eaf0b4d715e2bc58bba2865d63 PASS
+
+=== s390x (big-endian, native-int128) ===
+s390x-linux-gnu-gcc 13.3.0
+auto_backend=native-int128 hash=c0d933ea340452ec PASS
+forced_portable_hash=c0d933ea340452ec PASS
+llama_int_static_build_and_startup=PASS
+cross_endian_loader=PASS (little-endian MGW rejected)
+
+=== ppc64 (big-endian, native-int128) ===
+powerpc64-linux-gnu-gcc 13.3.0
+auto_backend=native-int128 hash=c0d933ea340452ec PASS
+forced_portable_hash=c0d933ea340452ec PASS
+llama_int_static_build_and_startup=PASS
+cross_endian_loader=PASS (little-endian MGW rejected)
+
+=== sparc64 (big-endian, native-int128) ===
+sparc64-linux-gnu-gcc 13.3.0
+auto_backend=native-int128 hash=c0d933ea340452ec PASS
+forced_portable_hash=c0d933ea340452ec PASS
+llama_int_static_build_and_startup=PASS
+cross_endian_loader=PASS (little-endian MGW rejected)
+
+=== mips64 (big-endian, native-int128) ===
+mips64-linux-gnuabi64-gcc 12.4.0
+auto_backend=native-int128 hash=c0d933ea340452ec PASS
+forced_portable_hash=c0d933ea340452ec PASS
+llama_int_static_build_and_startup=PASS
+cross_endian_loader=PASS (little-endian MGW rejected)
+
+=== hppa (big-endian, portable-two-limb) ===
+hppa-linux-gnu-gcc 13.3.0
+auto_backend=portable-two-limb hash=c0d933ea340452ec PASS
+forced_portable_hash=c0d933ea340452ec PASS
+llama_int_static_build=SKIP (target compiler has no __int128)
+cross_endian_loader=PASS (little-endian MGW rejected)
+
+=== m68k (big-endian, portable-two-limb) ===
+m68k-linux-gnu-gcc 13.3.0
+auto_backend=portable-two-limb hash=c0d933ea340452ec PASS
+forced_portable_hash=c0d933ea340452ec PASS
+llama_int_static_build=SKIP (target compiler has no __int128)
+cross_endian_loader=PASS (little-endian MGW rejected)
+
+QEMU_MATRIX=PASS

@@ -1,6 +1,7 @@
 # CPU test: x86-64 AMD (Zen 4) Linux server — native gcc
 
-Status: **PASS** (2026-07-28, tree `1b706ecf6c7f`)
+Status: **PASS** (native suite 2026-07-28; TinyLlama final-source
+revalidation 2026-07-30)
 
 Native-Linux target, no PlatformIO: `../native_check.sh` copies the sources
 plus the committed `model.mgw` over ssh, builds with the distro gcc, and
@@ -21,13 +22,16 @@ So an AMD/gcc/Linux box, an Intel/gcc/Linux box, an arm64/clang/macOS
 laptop, and a 32-bit ARMv6 Pi all *train* to the identical weight file —
 not just infer identically.
 
-Additional check on this host (not in the transcript): `llama_int` with
-TinyLlama-1.1B exported to a native 8.8 GB `.mgw`, `--native --generate
---max-new-tokens 16` over the four preset prompts, weights served from a
-tmpfs ramdisk — the generated token streams are identical to the Intel
-box's and unchanged from the pre-merge build (~1.5 tok/s here).
+The final `llama_int.c` source was revalidated after the Pi 5 portability
+fixes. TinyLlama-1.1B, exported to the 8,800,406,496-byte native `.mgw`,
+ran from tmpfs with `--native --benchmark`: all four prompts matched the
+float-reference oracle, **80/80 tokens**. The run took 51.8 seconds
+wall-clock, about 1.55–1.66 generated token/s per prompt.
 
-Raw capture: `results/2026-07-28-x86-amd-zen4.txt`.
+Recorded transcripts:
+
+- `results/2026-07-28-x86-amd-zen4.txt`
+- `results/2026-07-30-x86-amd-zen4-tinyllama.txt`
 
 ## Hardware / Config
 

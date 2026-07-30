@@ -1,0 +1,67 @@
+# Concise transcript of the final warning-free Pi 5 TinyLlama run.
+# run 2026-07-30T02:39:50Z
+# target Raspberry Pi 5 Model B Rev 1.1, 16 GB
+# system Linux 6.18.34+rpt-rpi-2712 aarch64
+# cpu Cortex-A76 (4 cores, up to 2.4 GHz)
+# gcc gcc (Debian 14.2.0-19) 14.2.0
+# invocation:
+#   ./llama_int $HOME/tinyllama.mgw --native --ref-dir . --benchmark --profile
+# model bytes: 8800406496
+# model sha256:
+#   7e8218d7f79a784f9d1868140fb16c3b9f5fbc45c19fb5c807ddcba5b41e32a8
+# source sha256:
+#   38520b39b86f5fe90f7d92cd3a3026877e16370f15a85c9b5f22079e291abf6c  fp_math.h
+#   63fdc6caa907d5e00e38912da49fe543aa609446be59186ef3095ea39083c469  safetensors.h
+#   4441ddb15fc56cfb3043cddf4eb717060bfedcd05a404ce18d66a7b3640a58cf  tokenizer.h
+#   b75a4ccbb20a96ed7d42e5f28c57ecf441308a9d8ea115ee37940ed4876d75bb  llama_int.c
+# reference_tokens.txt sha256:
+#   4096d4e1b05ef56cef8d5d8c28904cc927350b564b56f080b02136bb22a56114
+# The 80 reference tokens are the CPU-oracle arrays also committed in
+# gpu/bench_full_fp16.cu. The local file was mechanically checked against
+# all four arrays before transfer.
+# storage mode: normal home filesystem, --native mmap; no tmpfs/RAM disk
+# thermal before: temp=53.8'C, throttled=0x0
+
+Native weights loaded: 201 tensors, 8.2 GiB mmap'd
+KV-cache: 176.0 MiB exact
+Native mmap path: all layers available via mmap (OS-managed paging)
+Quality Benchmark: Integer-Only Llama-Family Model
+
+--- Prompt: france_capital ---
+Generated 20 tokens in 76.92 seconds (0.26 tok/s)
+Tokens: [1, 450, 7483, 310, 3444, 338, 3681, 29889, 13, 13, 29906, 29889, 350, 29889, 450, 7483, 310, 9556, 338, 5115, 29889, 13, 13, 29941, 29889, 315]
+
+--- Prompt: story_beginning ---
+Generated 20 tokens in 73.69 seconds (0.27 tok/s)
+Tokens: [1, 9038, 2501, 263, 931, 29892, 727, 471, 263, 4123, 6114, 4257, 365, 2354, 29889, 2296, 10600, 297, 263, 2319, 4726, 29892, 988, 14332, 6363]
+
+--- Prompt: simple_math ---
+Generated 20 tokens in 73.71 seconds (0.27 tok/s)
+Tokens: [1, 29896, 29974, 29896, 29922, 29896, 13, 13, 6295, 278, 2533, 310, 278, 937, 302, 4958, 310, 278, 383, 747, 265, 21566, 5665, 338, 29871]
+
+--- Prompt: meaning_of_life ---
+Generated 20 tokens in 76.78 seconds (0.26 tok/s)
+Tokens: [1, 450, 6593, 310, 2834, 338, 304, 1284, 596, 15935, 29892, 12359, 434, 372, 411, 599, 596, 1795, 29892, 322, 5967, 263, 25000, 29889, 13, 13]
+
+--- Reference Comparison ---
+france_capital: 20/20 tokens match (100.0%)
+story_beginning: 20/20 tokens match (100.0%)
+simple_math: 20/20 tokens match (100.0%)
+meaning_of_life: 20/20 tokens match (100.0%)
+
+TOTAL: 80/80 tokens match (100.0%)
+PERFECT MATCH — integer output identical to float reference
+
+PROFILE:
+native_load             0.000 s
+rope_init               0.013 s
+prefill                67.657 s (22 tokens, 3075.3 ms/tok)
+decode                233.448 s (76 tokens, 3071.7 ms/tok)
+generation_total      301.105 s
+wall                   313.524 s
+modeled peak resident 8569.7 MiB
+swap used                 0 B
+
+# thermal after: temp=58.7'C, throttled=0x0
+# end 2026-07-30T02:45:04Z
+tinyllama: PASS (80/80 tokens, normal-filesystem mmap, no throttling)

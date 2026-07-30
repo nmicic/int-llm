@@ -60,6 +60,18 @@ scp -q "$HOSTDIR"/fp_math.h "$HOSTDIR"/fp_determinism.c "$HOSTDIR"/microgpt_int.
        "$HOSTDIR"/model.mgw "$USERHOST:$REMOTE_DIR/"
 [ "$TRAIN" = "--train" ] && scp -q "$HOSTDIR/input.txt" "$USERHOST:$REMOTE_DIR/"
 
+ARCH=$(ssh "$USERHOST" 'uname -m')
+REMOTE_CPU=$(ssh "$USERHOST" '
+    cpu=$(sed -n "s/^model name[[:space:]]*:[[:space:]]*//p" /proc/cpuinfo | head -1)
+    if [ -z "$cpu" ] && command -v lscpu >/dev/null 2>&1; then
+        cpu=$(lscpu | sed -n "s/^Model name:[[:space:]]*//p" | head -1)
+    fi
+    if [ -z "$cpu" ] && [ -r /proc/device-tree/model ]; then
+        cpu=$(tr -d "\0" < /proc/device-tree/model)
+    fi
+    printf "%s" "$cpu"
+')
+
 {
     echo "# run $STAMP"
     echo "# target-folder $TARGET tree $COMMIT$DIRTY"
@@ -67,14 +79,13 @@ scp -q "$HOSTDIR"/fp_math.h "$HOSTDIR"/fp_determinism.c "$HOSTDIR"/microgpt_int.
     echo "# sources sha256 (local tree):"
     ( cd "$HOSTDIR" && shasum -a 256 fp_math.h fp_determinism.c microgpt_int.c model.mgw | sed 's/^/#   /' )
     echo "# remote: $(ssh "$USERHOST" 'uname -srvm')"
-    echo "# remote cpu: $(ssh "$USERHOST" 'grep -m1 "model name" /proc/cpuinfo | cut -d: -f2- || tr -d "\0" < /proc/device-tree/model' | sed 's/^ *//')"
+    echo "# remote cpu: $REMOTE_CPU"
     echo "# remote gcc: $(ssh "$USERHOST" 'gcc --version | head -1')"
     echo "# remote sha256:"
     ssh "$USERHOST" "cd $REMOTE_DIR && sha256sum fp_math.h fp_determinism.c microgpt_int.c model.mgw" | sed 's/^/#   /'
 } > "$OUT"
 
 fail=0
-ARCH=$(ssh "$USERHOST" 'uname -m')
 
 run_det () {  # $1 = extra cflags, $2 = check name
     ssh "$USERHOST" "cd $REMOTE_DIR && gcc $CFLAGS $1 -o fp_det_$2 fp_determinism.c && \

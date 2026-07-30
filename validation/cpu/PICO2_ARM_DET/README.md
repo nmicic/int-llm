@@ -21,7 +21,7 @@ Raw capture: `results/2026-07-29-pico2-arm-det.txt`.
 ## Hardware
 
 - Board: Raspberry Pi Pico 2, VID:PID `2E8A:000F`,
-  port `/dev/cu.usbmodem1101` — same physical board as
+  port `/dev/cu.usbmodem-<REDACTED>` — same physical board as
   astro-nav-int's `PI_PICO_RP2350` / `PI_PICO_RP2350_RISCV` targets
 - SoC: RP2350, dual-ISA — 2× Cortex-M33 (Armv8-M, this target) *or*
   2× Hazard3 RISC-V (rv32imac), both @ 150 MHz; ARM mode has an FPU but

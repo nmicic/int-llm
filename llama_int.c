@@ -31,6 +31,7 @@
  */
 
 #define _POSIX_C_SOURCE 200809L
+#define _XOPEN_SOURCE 700
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -4173,7 +4174,7 @@ static int verify_token_agreement(llama_model_t *m, const char *model_dir) {
 
 static int quality_benchmark(llama_model_t *m, const char *model_dir) {
     printf("\n================================================================\n");
-    printf("  Quality Benchmark: Integer-Only Llama-2-7B\n");
+    printf("  Quality Benchmark: Integer-Only Llama-Family Model\n");
     printf("================================================================\n");
 
     struct {

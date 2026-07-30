@@ -1,0 +1,37 @@
+# Concise transcript of the final-source Intel TinyLlama run.
+# run 2026-07-30T02:59:21Z
+# target Intel Core i7-7700, x86-64 Linux
+# gcc gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0
+# invocation:
+#   ./llama_int /mnt/ramdisk/tinyllama.mgw --native --ref-dir . --benchmark --profile
+# model bytes: 8800406496
+# model sha256:
+#   7e8218d7f79a784f9d1868140fb16c3b9f5fbc45c19fb5c807ddcba5b41e32a8
+# source sha256:
+#   38520b39b86f5fe90f7d92cd3a3026877e16370f15a85c9b5f22079e291abf6c  fp_math.h
+#   63fdc6caa907d5e00e38912da49fe543aa609446be59186ef3095ea39083c469  safetensors.h
+#   4441ddb15fc56cfb3043cddf4eb717060bfedcd05a404ce18d66a7b3640a58cf  tokenizer.h
+#   b75a4ccbb20a96ed7d42e5f28c57ecf441308a9d8ea115ee37940ed4876d75bb  llama_int.c
+# reference_tokens.txt sha256:
+#   4096d4e1b05ef56cef8d5d8c28904cc927350b564b56f080b02136bb22a56114
+# warning-free -Werror binary sha256:
+#   a12cefc0043ee8140f9842e424fc76e3b15ad6a420a6ea3814bd298d35ce7d61
+
+Quality Benchmark: Integer-Only Llama-Family Model
+france_capital: 20/20 tokens match (18.97 s, 1.05 tok/s)
+story_beginning: 20/20 tokens match (17.89 s, 1.12 tok/s)
+simple_math: 20/20 tokens match (17.89 s, 1.12 tok/s)
+meaning_of_life: 20/20 tokens match (18.63 s, 1.07 tok/s)
+
+TOTAL: 80/80 tokens match (100.0%)
+PERFECT MATCH — integer output identical to float reference
+
+PROFILE:
+prefill                16.728 s (22 tokens, 760.4 ms/tok)
+decode                 56.659 s (76 tokens, 745.5 ms/tok)
+generation_total       73.387 s
+wall                   76.670 s
+modeled peak resident 8569.7 MiB
+
+# end 2026-07-30T03:00:58Z
+tinyllama: PASS (80/80 tokens, final source, native tmpfs mmap)
