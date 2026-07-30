@@ -163,7 +163,7 @@ main build:
 | INT8, per-tensor absmax | **29/80**, 220 tok/s | Lossy **and slower** than FP16 |
 | FP8 E4M3 | **36/80**, 394 tok/s | Faster, but floating point and lossy |
 | Exact Q16.48 / INT64 kernels | No tensor-core path; could not close the gap at decode shapes | Exact, but not competitive |
-| INT32 Q16.16 vs FP32, CUDA cores only | Performance parity at M=1 | Memory-bandwidth-bound; no integer speed advantage |
+| INT32 Q16.16 vs FP32, CUDA cores only | Performance parity at M=1 | Matched equal-width kernels were memory-system-limited; no arithmetic-only integer advantage |
 
 The hardware is optimized for FP16/BF16/INT8/FP8 tensor cores, while exact
 Q16.48 falls back to CUDA cores. The faster formats therefore give up the

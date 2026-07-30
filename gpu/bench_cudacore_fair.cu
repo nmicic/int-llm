@@ -85,8 +85,9 @@ __global__ void kern_float_to_q16(int32_t *out, const float *in, int n) {
  * y[M] = W[M,K] * x[K]   (W row-major)
  *
  * Strategy: 1D grid over M, each thread computes one output element.
- * Serial inner loop over K. Coalesced weight reads across threads
- * (adjacent threads read adjacent columns of W for the same K).
+ * Serial inner loop over K. Reads are contiguous within each thread but
+ * strided by K across adjacent threads; this simple access pattern is
+ * intentionally identical for the two paths.
  *
  * IMPORTANT: both kernels use IDENTICAL structure to ensure fairness.
  * ================================================================ */

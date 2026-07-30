@@ -74,20 +74,25 @@ CUDA cores only, identical tiling/bandwidth, no tensor cores):**
 
 | GEMM shape | FP32 | INT32 Q16.16 | Ratio |
 |------------|------|--------------|-------|
-| q/o_proj | 98.3 µs | 96.4 µs | 0.98× |
+| q/o_proj | 96.4 µs | 98.3 µs | 0.98× |
 | kv_proj / gate_up | 94.2 µs | 94.2 µs | 1.00× |
-| down_proj | 255.3 µs | 254.1 µs | 1.00× |
+| down_proj | 254.1 µs | 255.3 µs | 1.00× |
+
+`Ratio = FP32 / INT32`, so values below 1 mean the INT32 lane was slower.
 
 Performance is **identical** (max numeric drift 2–4 × 10⁻⁴, consistent with Q16.16's 16
-fractional bits). The reason is the whole point: at **M=1 decode the GPU is
-memory-bandwidth-bound**, so the ~4× instruction-count gap between an FP32 FMA (1 instruction)
-and an INT32→INT64 fixed-point multiply (~4 instructions) is completely hidden behind DRAM
-latency. Integer arithmetic offers **no speed advantage on this hardware** — the CPU's Q16.48
-win comes from the *wider, exact format* (48 fractional bits, bit-reproducible), not from
-"integer being faster." And the only way to go *faster* on a GPU is the tensor cores, which
-serve exactly the lossy formats (FP16/FP8/INT8) that break the exact-token guarantee. That
-square — exact needs CUDA cores, fast needs tensor cores, and tensor cores aren't exact — is
-why the whole branch is parked.
+fractional bits). In these matched simple kernels, **M=1 decode is memory-system-limited**:
+the ~4× instruction-count gap between an FP32 FMA (1 instruction) and an INT32→INT64
+fixed-point multiply (~4 instructions) is hidden behind memory latency. Equal-width INT32
+arithmetic therefore offers **no speed advantage on this hardware** — the CPU's Q16.48 value
+comes from the *wider, exact format* (48 fractional bits, bit-reproducible), not from "integer
+being faster."
+
+Tensor cores remain the tested high-throughput route, but they serve the lower-precision
+formats that lost the exact-token guarantee in these experiments. A future integer path with
+narrower storage could reduce memory traffic and ask a genuinely different question; that
+would be a representation-plus-execution result, not an arithmetic-only win inherited from
+this equal-width table.
 
 ## Status
 
