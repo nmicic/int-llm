@@ -12,6 +12,12 @@ The integer path also matches the float reference **token-for-token** (80/80 on 
 
 This is a feasibility demo, deliberately slow and simple. What it provides is something most LLM stacks don't: a **reproducible, exact reference** — an oracle — for anyone working on quantization, numerical drift, regression testing, or deterministic inference.
 
+> **GPU result, upfront:** the CUDA experiments did not find an integer GPU
+> path that combined exact output with a performance advantage. FP16 was fast
+> and matched 80/80, but is floating point; INT8 and FP8 were lossy; exact
+> INT64 had no tensor-core path. The measured negative-or-mixed results are
+> retained in [`gpu/`](gpu/), not presented as part of the integer thesis.
+
 `fp_math.h` no longer requires `__int128`: it now carries two interchangeable wide-math backends — native `__int128` where the compiler has it, and a portable two-limb software backend (C99 + 64-bit integers only) everywhere else — Cortex-M, RV32, Xtensa, ARMv6, even 8-bit AVR — computing the **same bits**. This was matured in the [astro-nav-int](https://github.com/nmicic/astro-nav-int) sibling project and folded back here. `make determinism` and `make determinism-portable` both reproduce the committed golden hash, `gpt_int` training on a 2014 Raspberry Pi 1 B+ (32-bit ARMv6, no `__int128`) is byte-identical to the same run on a 64-bit host, and the train-big/run-small loop closes on microcontrollers: train on a laptop (`./gpt_int --save model.mgw`), run inference-only from the same weight file on a $5 RP2040 — byte-for-byte the same samples (see [`validation/cpu/`](validation/cpu/)). `llama_int` still uses raw `__int128` accumulators directly and remains 64-bit-only for now.
 
 - `gpt_int`: integer-only Q16.48 character GPT — trains **and** samples from a small downloaded names dataset; `--save`/`--load model.mgw` round-trips the trained weights as pure integers
@@ -146,9 +152,28 @@ Weights load from a standard Hugging Face directory (`config.json` + safetensors
 
 > Aside: along the way we explored a geometric sign-code pre-filter for attention (a machine-native shortcut for the score computation). On this workload it gave no measurable benefit and is omitted from this artifact. The honest result is "didn't help here," kept out so the code that ships is only the code that earns its place.
 
-### A parked experiment: GPU (`gpu/`)
+## GPU results: integer paths parked as negative-or-mixed (`gpu/`)
 
-There's a CUDA side-branch in [`gpu/`](gpu/) — kept as an honest **null result**, not part of the main build. A full FP16 TinyLlama decode on an RTX-class GPU reproduced the CPU's token output exactly, but FP16 is *floating point*, so it sits outside this project's zero-float thesis; the integer-on-GPU directions (INT8 / FP8 / INT64 kernels, CUDA-graph capture) were parked as negative-or-mixed. It needs `nvcc` + a GPU and is deliberately not wired into `make all`. See [`gpu/README.md`](gpu/README.md) for what was tried and why none of it earned a place in the integer core.
+The CUDA side-branch is kept as measured negative evidence, separate from the
+main build:
+
+| GPU path | Measured result | Why it is parked |
+|---|---|---|
+| FP16 full decode | **80/80**, 333–334 tok/s | Correct and fast, but floating point — off-thesis |
+| INT8, per-tensor absmax | **29/80**, 220 tok/s | Lossy **and slower** than FP16 |
+| FP8 E4M3 | **36/80**, 394 tok/s | Faster, but floating point and lossy |
+| Exact Q16.48 / INT64 kernels | No tensor-core path; could not close the gap at decode shapes | Exact, but not competitive |
+| INT32 Q16.16 vs FP32, CUDA cores only | Performance parity at M=1 | Memory-bandwidth-bound; no integer speed advantage |
+
+The hardware is optimized for FP16/BF16/INT8/FP8 tensor cores, while exact
+Q16.48 falls back to CUDA cores. The faster formats therefore give up the
+exactness this project requires, and the exact format gives up the fast
+hardware path. CUDA-graph and fair CUDA-core tests looked for a win at the
+margins but did not change that conclusion.
+
+The directory needs `nvcc` + an NVIDIA GPU, is not wired into `make all`, and
+remains a reproducible lab notebook. See [`gpu/README.md`](gpu/README.md) for
+the kernels, measurements, methodology, and limits.
 
 ## Validated on real hardware (`validation/cpu/`)
 
