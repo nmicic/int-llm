@@ -283,6 +283,20 @@ Integer targets build with **no `-lm`** — pure integer, no external math depen
 | `validation/qemu/` | Supplementary cross-architecture QEMU user-mode matrix; 12 ABI/endian configurations |
 | `gpu/` | Parked CUDA experiments (FP16/INT benchmarks) — honest null result, not in `make all`; see `gpu/README.md` |
 
+## Related int-llm experiments
+
+Two follow-up repositories use this Q16.48 implementation as their reference:
+
+- [`int-llm-precision-ladder`](https://github.com/nmicic/int-llm-precision-ladder)
+  explores how far stored weight precision can be reduced while preserving the
+  oracle's behavior on explicit regression gates. It adds mixed-F11/F12
+  signed-int16 MGWI storage and direct safetensors-to-MGWI conversion.
+- [`int-llm-coordinate-permutation`](https://github.com/nmicic/int-llm-coordinate-permutation)
+  explores reversible vocabulary, neuron, attention-head, and hidden-coordinate
+  permutations in Q16.48 MGW and BF16/F16/F32 SafeTensors models. It is a
+  controlled model-symmetry experiment; no speedup, compression, cryptographic
+  security, or novelty of the underlying symmetries is claimed.
+
 ## Acknowledgements
 
 The character-GPT design is inspired by **Andrej Karpathy's** [microgpt.py](https://gist.github.com/karpathy/8627fe009c40f57531cb18360106ce95) and guide — a ~200-line Python char GPT using the public makemore names dataset. The C here is an independent from-scratch rebuild, not a port; the baseline config (`N_EMBD=32, N_HEAD=4, N_LAYER=1`, 14,272 params) is the one that pairs cleanly with the integer variant for side-by-side comparison. A leaner speed-tuned variant of the float trainer (sub-20 ms/step) lives in [this gist](https://gist.github.com/nmicic/35316463f3c5e8e9fe8eb599b3842b58).
